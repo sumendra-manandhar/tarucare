@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "project": {
+    "name": "tarucare",
+    "productType": "product marketing site (herbal soap, D2C)",
+    "stack": [
+      "react",
+      "tailwind-v4",
+      "vite"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "src/index.css"
+    ],
+    "components": [],
+    "assets": [],
+    "instructions": []
+  },
+  "design": {
+    "colorMode": "light",
+    "colors": {
+      "--color-forest": {
+        "value": "#1b4332",
+        "source": "src/index.css"
+      },
+      "--color-forest-light": {
+        "value": "#2d6a4f",
+        "source": "src/index.css"
+      },
+      "--color-sage": {
+        "value": "#95d5b2",
+        "source": "src/index.css"
+      },
+      "--color-amber": {
+        "value": "#d4a373",
+        "source": "src/index.css"
+      },
+      "--color-amber-dark": {
+        "value": "#b5835a",
+        "source": "src/index.css"
+      },
+      "--color-cream": {
+        "value": "#fdfbf7",
+        "source": "src/index.css"
+      },
+      "--color-sand": {
+        "value": "#f3ece0",
+        "source": "src/index.css"
+      },
+      "--color-slate": {
+        "value": "#2b2d42",
+        "source": "src/index.css"
+      }
+    },
+    "typography": {
+      "--font-serif": {
+        "value": "\"Playfair Display\", Georgia, serif",
+        "source": "src/index.css"
+      },
+      "--font-sans": {
+        "value": "\"Plus Jakarta Sans\", system-ui, sans-serif",
+        "source": "src/index.css"
+      }
+    },
+    "spacing": {},
+    "radius": {},
+    "shadows": {},
+    "motion": {},
+    "density": "unknown"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [
+      "Use moss/kraft/sand/ink/amber tokens from src/index.css",
+      "Keyboard focus must stay visible on all inputs",
+      "Do not repeat product listings directly under the hero"
+    ],
+    "avoid": [
+      "Rings, orbits or dials",
+      "Boxed card grids for storytelling sections",
+      "Leader-line callouts / diagram overlays",
+      "Concentric or double blobs",
+      "Grey/muddy slide tints — use curated soft tints"
+    ]
+  },
+  "decisions": [
+    {
+      "date": "2026-10-18",
+      "title": "Product-first, no diagrams",
+      "detail": "Order: themed hero carousel → USP strip → Shop by skin need (swipe arc + detail card with benefit icon list) → All soaps grid → ingredient cards → story (text + moss panel checklist) → process vine → contact. One soft blob max per stage; no concentric shapes, leader lines, ringed dots, or corner blooms on cards (a thin top accent bar instead)."
+    }
+  ],
+  "evidence": [
+    {
+      "fact": "design.colorMode:light",
+      "source": "src/index.css"
+    },
+    {
+      "fact": "design.tokens",
+      "source": "src/index.css"
+    },
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:tailwind-v4",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:vite",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-10-17T19:33:38.847Z"
+}

@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --color-forest: #1b4332;
+  --color-forest-light: #2d6a4f;
+  --color-moss: #1f3d2b;
+  --color-sage: #95d5b2;
+  --color-amber: #d4a373;
+  --color-amber-dark: #b5835a;
+  --color-kraft: #e4d3b2;
+  --color-kraft-dark: #cfb88f;
+  --color-ink: #2e2219;
+  --color-cream: #fdfbf7;
+  --color-sand: #f3ece0;
+  --color-slate: #2b2d42;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --animate-marquee: marquee 40s linear infinite;
+
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
+
+  --animate-blob: blob 14s ease-in-out infinite;
+  @keyframes blob {
+    0%, 100% { border-radius: 58% 42% 36% 64% / 52% 38% 62% 48%; }
+    33% { border-radius: 40% 60% 62% 38% / 38% 58% 42% 62%; }
+    66% { border-radius: 64% 36% 46% 54% / 60% 46% 54% 40%; }
+  }
+}
+
+html { scroll-behavior: smooth; }
+body {
+  @apply bg-cream text-ink font-sans antialiased;
+}
+::selection { background: #d4a373; color: #1f3d2b; }
+
+:focus-visible {
+  outline: 2px solid #b5835a;
+  outline-offset: 3px;
+}
+
+/* Kraft paper grain, echoing the packaging */
+.paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: .07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.grain::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .05; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-marquee, .animate-blob { animation: none; }
+}
