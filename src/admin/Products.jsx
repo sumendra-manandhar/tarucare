@@ -21,18 +21,19 @@ const blank = () => ({
 
 const MAX_PHOTOS = 12
 
-// Phone photos are often larger than the 4 MB upload limit, so shrink them in the browser first.
-function shrink(file, max = 2000) {
+// Shrink photos in the browser first: phone photos are often several MB, and smaller files load
+// faster for shoppers and fit comfortably in the photo storage.
+function shrink(file, max = 1600) {
   return new Promise((resolve) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
     img.onload = () => {
       URL.revokeObjectURL(url)
       const scale = Math.min(1, max / Math.max(img.width, img.height))
-      if (scale === 1 && file.size < 3.5 * 1024 * 1024) return resolve(file)
+      if (scale === 1 && file.size < 900 * 1024) return resolve(file)
       const c = Object.assign(document.createElement('canvas'), { width: Math.round(img.width * scale), height: Math.round(img.height * scale) })
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height)
-      c.toBlob((b) => resolve(b ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file), 'image/jpeg', 0.86)
+      c.toBlob((b) => resolve(b ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file), 'image/jpeg', 0.82)
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)

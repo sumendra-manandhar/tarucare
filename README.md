@@ -17,7 +17,17 @@ cp .env.example .env   # then set ADMIN_PASSWORD and SESSION_SECRET
 npm run dev            # site on http://localhost:5173, admin at /admin
 ```
 
-## Production
+## Deploy on Vercel
+
+The site and the API both run on Vercel: `api/index.js` is a serverless function, and data and photos are kept in Upstash Redis (Vercel's own disk doesn't persist).
+
+1. In the Vercel project, open **Storage → Create Database → Upstash for Redis** (the free plan is fine) and connect it to this project. Vercel adds its connection variables automatically.
+2. In **Settings → Environment Variables**, add `ADMIN_PASSWORD` with the password you want for the admin panel. `SESSION_SECRET` is optional.
+3. Redeploy. The admin panel is linked from the footer and lives at `/admin`.
+
+To change the admin password, edit `ADMIN_PASSWORD` and redeploy; everyone signed in is signed out.
+
+## Self-hosted production
 
 ```bash
 npm run build
