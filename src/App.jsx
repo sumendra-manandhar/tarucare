@@ -12,6 +12,7 @@ import Process from './components/Process'
 import Ritual from './components/Ritual'
 import Story from './components/Story'
 import { AddedToast, CartDrawer } from './components/Cart'
+import { AccountDrawer } from './components/Account'
 import { DEMO_BUILD, exitDemo, isDemo } from './lib/api'
 
 // Product-first flow: hook → shop → learn → trust → answer doubts → convert.
@@ -53,6 +54,7 @@ export default function App() {
         </div>
       )}
       <CartDrawer />
+      <AccountDrawer />
       <AddedToast />
     </MotionConfig>
   )

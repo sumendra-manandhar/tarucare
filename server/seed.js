@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { contact, defaultHeroSlides, products as seedProducts, shopDefaults, withSkinBenefits } from '../src/data.js'
+import { contact, defaultHeroSlides, defaultRoles, products as seedProducts, shopDefaults, withSkinBenefits } from '../src/data.js'
 
 export const newId = () => randomUUID().slice(0, 8)
 
@@ -19,6 +19,9 @@ export function seed() {
     })),
     inquiries: [],
     orders: [],
+    customers: [],
+    staff: [],
+    roles: structuredClone(defaultRoles),
     settings: {
       ...contact,
       ...shopDefaults,
@@ -43,7 +46,11 @@ export function migrate(db) {
     db.settings.heroSlides = defaultHeroSlides
     changed = true
   }
-  for (const key of ['orders', 'inquiries']) {
+  if (!Array.isArray(db.roles)) {
+    db.roles = structuredClone(defaultRoles)
+    changed = true
+  }
+  for (const key of ['orders', 'inquiries', 'customers', 'staff']) {
     if (!Array.isArray(db[key])) {
       db[key] = []
       changed = true

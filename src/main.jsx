@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import { SiteDataProvider } from './SiteData.jsx'
 import { CartProvider } from './Cart.jsx'
+import { AccountProvider } from './Account.jsx'
 import './index.css'
 
 // Admin code is split into its own chunk so visitors never download it.
@@ -29,9 +30,11 @@ function Root() {
     </Suspense>
   ) : (
     <SiteDataProvider>
-      <CartProvider>
-        <App />
-      </CartProvider>
+      <AccountProvider>
+        <CartProvider>
+          <App />
+        </CartProvider>
+      </AccountProvider>
     </SiteDataProvider>
   )
 }

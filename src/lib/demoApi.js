@@ -1,11 +1,14 @@
 // In-browser stand-in for the Express API, used only by static preview builds (VITE_DEMO).
 // Everything is kept in this browser's localStorage, so each visitor gets their own sandbox.
 // It mirrors the server's rules (server/index.js) closely enough to demo the admin and checkout.
-import { benefitChoices, contact, defaultHeroSlides, filters, ORDER_STATUSES, products as seedProducts, shopDefaults, withSkinBenefits } from '../data'
+import { benefitChoices, contact, defaultHeroSlides, defaultRoles, filters, ORDER_STATUSES, PERMISSIONS, products as seedProducts, shopDefaults, withSkinBenefits } from '../data'
 
 export const DEMO_PASSWORD = 'taru@123'
 const KEY = 'taru-demo:db'
 const SESSION = 'taru-demo:session'
+const CUSTOMER = 'taru-demo:customer'
+const ALL = PERMISSIONS.map((p) => p.key)
+export const DEMO_STAFF_PASSWORD = 'demo1234'
 const CATEGORIES = filters.filter((f) => f !== 'All')
 const INGREDIENTS = ['turmeric', 'beetroot', 'sandalwood', 'titepati', 'tulsi', 'honey', 'milk', 'charcoal']
 
@@ -26,23 +29,39 @@ function seed() {
     const p = products.find((x) => x.id === id)
     return { id, name: p.name, price: p.price, qty }
   }
-  const order = (id, h, status, customer, items, payment) => {
+  const order = (id, h, status, customer, items, payment, customerId = null) => {
     const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0)
     const delivery = subtotal >= shopDefaults.freeDeliveryOver ? 0 : shopDefaults.deliveryFee
-    return { id, status, customer, payment, notes: '', adminNotes: '', items, subtotal, delivery, total: subtotal + delivery, createdAt: ago(h), updatedAt: ago(h) }
+    return { id, status, customerId, customer, payment, notes: '', adminNotes: '', items, subtotal, delivery, total: subtotal + delivery, createdAt: ago(h), updatedAt: ago(h) }
   }
   return {
     products,
     settings: { ...contact, ...shopDefaults, showTeaser: true, teaserText: 'Exciting new herbal blends are coming soon for every skin need.', heroSlides: defaultHeroSlides },
     orders: [
-      order('TC-1003', 2, 'pending', { name: 'Prakriti J.', phone: '9800000003', email: '', address: 'Jhamsikhel', city: 'Lalitpur' }, [line('turmeric', 2), line('honey', 1)], 'Cash on Delivery'),
+      order('TC-1003', 2, 'pending', { name: 'Prakriti J.', phone: '9800000003', email: 'prakriti@example.com', address: 'Jhamsikhel', city: 'Lalitpur' }, [line('turmeric', 2), line('honey', 1)], 'Cash on Delivery', 'c_prakriti'),
       order('TC-1002', 26, 'confirmed', { name: 'Suman R.', phone: '9800000002', email: '', address: 'Lakeside', city: 'Pokhara' }, [line('charcoal', 1)], 'eSewa'),
-      order('TC-1001', 80, 'delivered', { name: 'Anjali M.', phone: '9800000001', email: '', address: 'Kirtipur-5', city: 'Kathmandu' }, [line('sandalwood', 2), line('goatmilk-tulsi', 1)], 'Khalti'),
+      order('TC-1001', 80, 'delivered', { name: 'Anjali M.', phone: '9800000001', email: 'anjali@example.com', address: 'Kirtipur-5', city: 'Kathmandu' }, [line('sandalwood', 2), line('goatmilk-tulsi', 1)], 'Khalti', 'c_anjali'),
     ],
+    ...people(),
     inquiries: [
       { id: 'q2', type: 'general', name: 'Rohan G.', email: 'rohan@example.com', phone: '', subject: 'Wholesale for my salon', message: 'Do you offer wholesale pricing for 50+ bars a month?', productId: '', productName: '', quantity: null, status: 'new', notes: '', createdAt: ago(5), updatedAt: ago(5) },
       { id: 'q1', type: 'general', name: 'Sophie L.', email: 'sophie@example.com', phone: '', subject: 'Export to France', message: 'We are a natural products boutique interested in importing your soaps.', productId: '', productName: '', quantity: null, status: 'resolved', notes: '', createdAt: ago(60), updatedAt: ago(60) },
     ],
+  }
+}
+
+// Sample shoppers and staff so the Customers and Team pages have something to show.
+function people() {
+  return {
+    customers: [
+      { id: 'c_prakriti', email: 'prakriti@example.com', name: 'Prakriti J.', picture: '', phone: '9800000003', address: 'Jhamsikhel', city: 'Lalitpur', createdAt: ago(240), lastLoginAt: ago(2) },
+      { id: 'c_anjali', email: 'anjali@example.com', name: 'Anjali M.', picture: '', phone: '9800000001', address: 'Kirtipur-5', city: 'Kathmandu', createdAt: ago(400), lastLoginAt: ago(80) },
+    ],
+    staff: [
+      { id: 's_bikash', name: 'Bikash T.', email: 'sales@tarucare.demo', roleId: 'sales', active: true, password: DEMO_STAFF_PASSWORD, createdAt: ago(300), lastLoginAt: ago(20) },
+      { id: 's_mira', name: 'Mira K.', email: 'marketing@tarucare.demo', roleId: 'marketing', active: true, password: DEMO_STAFF_PASSWORD, createdAt: ago(300), lastLoginAt: null },
+    ],
+    roles: structuredClone(defaultRoles),
   }
 }
 
@@ -55,6 +74,8 @@ function load() {
     db = null
   }
   if (!db?.products) db = seed()
+  if (!db.roles) Object.assign(db, people()) // demo data saved before staff & customers existed
+  db.settings = { ...shopDefaults, ...db.settings }
   return db
 }
 function save() {
@@ -64,25 +85,43 @@ function save() {
     throw new ApiError('This browser has run out of space for demo data. Remove a few photos and try again.', 507)
   }
 }
-const authed = () => {
+const storage = (area, fn) => {
   try {
-    return sessionStorage.getItem(SESSION) === '1'
+    return fn(area === 'session' ? sessionStorage : localStorage)
   } catch {
-    return false
+    return null
   }
 }
-// Signs the visitor straight into the demo admin (no password needed).
+// Signs the visitor straight into the demo admin as the owner (no password needed).
 export function startDemoSession() {
-  try {
-    sessionStorage.setItem(SESSION, '1')
-  } catch {
-    /* storage blocked: the demo login form still works */
-  }
+  storage('session', (s) => s.setItem(SESSION, 'owner'))
 }
 
-const requireAdmin = () => {
-  if (!authed()) throw new ApiError('Not signed in', 401)
+// Same shape as the server's adminUser(): the owner, or a staff member with their role's menus.
+function currentUser() {
+  const who = storage('session', (s) => s.getItem(SESSION))
+  if (!who) return null
+  if (who === 'owner' || who === '1') return { id: 'owner', name: 'Owner', email: '', owner: true, role: 'Owner', permissions: ALL }
+  const m = db.staff.find((x) => x.id === who && x.active)
+  if (!m) return null
+  const role = db.roles.find((r) => r.id === m.roleId)
+  return { id: m.id, name: m.name, email: m.email, owner: false, role: role?.name ?? 'No role', permissions: role?.permissions ?? [] }
 }
+const authed = () => !!currentUser()
+const requireAdmin = (perm) => {
+  const u = currentUser()
+  if (!u) throw new ApiError('Not signed in', 401)
+  if (perm && !u.permissions.includes(perm)) throw new ApiError(`Your role doesn’t include access to ${PERMISSIONS.find((p) => p.key === perm)?.label ?? perm}.`, 403)
+  return u
+}
+const customerId = () => storage('local', (s) => s.getItem(CUSTOMER))
+const publicCustomer = (c) => ({ id: c.id, email: c.email, name: c.name, picture: c.picture, phone: c.phone, address: c.address, city: c.city })
+const summary = (c) => {
+  const mine = db.orders.filter((o) => o.customerId === c.id)
+  return { ...publicCustomer(c), createdAt: c.createdAt, lastLoginAt: c.lastLoginAt ?? null, orderCount: mine.length, spent: mine.filter((o) => o.status !== 'cancelled').reduce((n, o) => n + o.total, 0) }
+}
+const publicStaff = ({ password, ...m }) => m
+const cleanPermissions = (list) => ALL.filter((p) => Array.isArray(list) && list.includes(p))
 const sorted = (list) => [...list].sort((a, b) => a.order - b.order)
 const clone = (v) => JSON.parse(JSON.stringify(v))
 
@@ -123,11 +162,14 @@ function moveStock(items, sign) {
 function placeOrder(b) {
   const s = db.settings
   if (!s.cartEnabled) throw new ApiError('Online ordering is paused. Please call or message us to order.')
+  const account = db.customers.find((c) => c.id === customerId())
+  if (s.requireLogin && !account) throw new ApiError('Please sign in to place your order.', 401)
   const c = b.customer ?? {}
   const customer = { name: str(c.name, 80), phone: str(c.phone, 30), email: str(c.email, 120), address: str(c.address, 200), city: str(c.city, 60) }
   if (!customer.name) throw new ApiError('Name is required')
   if (!/^[+\d][\d\s-]{6,}$/.test(customer.phone)) throw new ApiError('A valid phone number is required')
   if (!customer.address || !customer.city) throw new ApiError('Delivery address and city are required')
+  if (account) customer.email = account.email
   const items = []
   for (const line of Array.isArray(b.items) ? b.items : []) {
     const p = db.products.find((x) => x.id === line?.id && x.published)
@@ -142,9 +184,10 @@ function placeOrder(b) {
   const delivery = s.freeDeliveryOver && subtotal >= s.freeDeliveryOver ? 0 : s.deliveryFee
   const last = Math.max(1000, ...db.orders.map((o) => Number(o.id.slice(3)) || 0))
   const payment = s.paymentMethods.includes(b.payment) ? b.payment : s.paymentMethods[0]
-  const order = { id: `TC-${last + 1}`, status: 'pending', customer, payment, notes: str(b.notes, 1000), adminNotes: '', items, subtotal, delivery, total: subtotal + delivery, createdAt: now(), updatedAt: now() }
+  const order = { id: `TC-${last + 1}`, status: 'pending', customerId: account?.id ?? null, customer, payment, notes: str(b.notes, 1000), adminNotes: '', items, subtotal, delivery, total: subtotal + delivery, createdAt: now(), updatedAt: now() }
   moveStock(items, -1)
   db.orders.unshift(order)
+  if (account) Object.assign(account, { phone: customer.phone, address: customer.address, city: customer.city })
   return { id: order.id, total: order.total, items, payment }
 }
 
@@ -153,6 +196,7 @@ function updateSettings(body) {
   for (const k of ['phone', 'email', 'website', 'facebook', 'instagram', 'teaserText', 'deliveryNote']) if (k in body) s[k] = str(body[k], 200)
   if ('showTeaser' in body) s.showTeaser = !!body.showTeaser
   if ('cartEnabled' in body) s.cartEnabled = !!body.cartEnabled
+  if ('requireLogin' in body) s.requireLogin = !!body.requireLogin
   for (const k of ['deliveryFee', 'freeDeliveryOver']) if (k in body) s[k] = Math.max(0, Math.round(Number(body[k]) || 0))
   if ('maxQtyPerItem' in body) s.maxQtyPerItem = Math.min(99, Math.max(1, Math.round(Number(body.maxQtyPerItem) || 1)))
   if (Array.isArray(body.paymentMethods)) {
@@ -176,21 +220,132 @@ function route(method, path, body) {
   }
 
   if (res === 'auth') {
-    if (id === 'me') return { authed: authed() }
+    if (id === 'me') return { authed: authed(), user: currentUser() }
     if (id === 'login') {
-      if (body?.password !== DEMO_PASSWORD) throw new ApiError('Incorrect password', 401)
-      sessionStorage.setItem(SESSION, '1')
+      const email = str(body?.email, 120).toLowerCase()
+      if (!email) {
+        if (body?.password !== DEMO_PASSWORD) throw new ApiError('Incorrect password', 401)
+        storage('session', (s) => s.setItem(SESSION, 'owner'))
+        return { ok: true }
+      }
+      const m = db.staff.find((x) => x.email === email)
+      if (!m || !m.active || m.password !== body?.password) throw new ApiError('Incorrect email or password', 401)
+      m.lastLoginAt = now()
+      storage('session', (s) => s.setItem(SESSION, m.id))
       return { ok: true }
     }
     if (id === 'logout') {
-      sessionStorage.removeItem(SESSION)
+      storage('session', (s) => s.removeItem(SESSION))
+      return { ok: true }
+    }
+  }
+
+  if (res === 'config') return { googleClientId: null, demo: true }
+
+  if (res === 'customer') {
+    if (id === 'demo') {
+      // Stands in for "Sign in with Google" so the checkout and account flow can be tried.
+      let c = db.customers.find((x) => x.id === 'c_demo')
+      if (!c) {
+        c = { id: 'c_demo', email: 'you@example.com', name: 'Demo Shopper', picture: '', phone: '', address: '', city: '', createdAt: now() }
+        db.customers.push(c)
+      }
+      c.lastLoginAt = now()
+      storage('local', (s) => s.setItem(CUSTOMER, c.id))
+      return publicCustomer(c)
+    }
+    if (id === 'logout') {
+      storage('local', (s) => s.removeItem(CUSTOMER))
+      return { ok: true }
+    }
+    const c = db.customers.find((x) => x.id === customerId())
+    if (id === 'me' && method === 'GET') return c ? publicCustomer(c) : null
+    if (!c) throw new ApiError('Please sign in first.', 401)
+    if (id === 'me' && method === 'PUT') {
+      if ('name' in body) {
+        if (!str(body.name, 80)) throw new ApiError('Name is required')
+        c.name = str(body.name, 80)
+      }
+      if ('phone' in body) {
+        if (body.phone && !/^[+\d][\d\s-]{6,}$/.test(str(body.phone, 30))) throw new ApiError('That phone number looks wrong')
+        c.phone = str(body.phone, 30)
+      }
+      if ('address' in body) c.address = str(body.address, 200)
+      if ('city' in body) c.city = str(body.city, 60)
+      return publicCustomer(c)
+    }
+    if (id === 'orders') return db.orders.filter((o) => o.customerId === c.id).map(({ adminNotes, ...o }) => o)
+  }
+
+  if (res === 'customers') {
+    requireAdmin('customers')
+    if (!id) return db.customers.map(summary)
+    const c = find(db.customers, 'Customer')
+    return { ...summary(c), orders: db.orders.filter((o) => o.customerId === c.id) }
+  }
+
+  if (res === 'staff') {
+    const me = requireAdmin('team')
+    if (method === 'GET') return db.staff.map(publicStaff)
+    const clean = (b, existing) => {
+      const name = str(b.name, 80)
+      const email = str(b.email, 120).toLowerCase()
+      if (!name) throw new ApiError('Name is required')
+      if (!/^\S+@\S+\.\S+$/.test(email)) throw new ApiError('Enter a valid email')
+      if (db.staff.some((x) => x.email === email && x.id !== existing?.id)) throw new ApiError('Someone already uses that email')
+      if (!db.roles.some((r) => r.id === b.roleId)) throw new ApiError('Pick a role')
+      if ((b.password || !existing) && String(b.password ?? '').length < 8) throw new ApiError('Password must be at least 8 characters')
+      return { name, email, roleId: b.roleId, active: b.active !== false, ...(b.password ? { password: b.password } : {}) }
+    }
+    if (method === 'POST') {
+      const m = { id: `s_${Date.now().toString(36)}`, ...clean(body ?? {}), createdAt: now(), lastLoginAt: null }
+      db.staff.push(m)
+      return publicStaff(m)
+    }
+    const m = find(db.staff, 'Staff member')
+    if (method === 'PUT') return publicStaff(Object.assign(m, clean(body ?? {}, m)))
+    if (method === 'DELETE') {
+      if (m.id === me.id) throw new ApiError('You can’t delete your own account')
+      db.staff = db.staff.filter((x) => x !== m)
+      return { ok: true }
+    }
+  }
+
+  if (res === 'roles') {
+    if (method === 'GET') {
+      requireAdmin()
+      return db.roles
+    }
+    requireAdmin('team')
+    const nameOf = (v, r) => {
+      const name = str(v, 40)
+      if (!name) throw new ApiError('Role name is required')
+      if (db.roles.some((x) => x !== r && x.name.toLowerCase() === name.toLowerCase())) throw new ApiError('A role with that name already exists')
+      return name
+    }
+    if (method === 'POST') {
+      const name = nameOf(body?.name)
+      const r = { id: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString(36).slice(-4)}`, name, permissions: cleanPermissions(body?.permissions) }
+      db.roles.push(r)
+      return r
+    }
+    const r = find(db.roles, 'Role')
+    if (method === 'PUT') {
+      if ('name' in body) r.name = nameOf(body.name, r)
+      if ('permissions' in body) r.permissions = cleanPermissions(body.permissions)
+      return r
+    }
+    if (method === 'DELETE') {
+      const users = db.staff.filter((m) => m.roleId === r.id).length
+      if (users) throw new ApiError(`${users} staff member${users > 1 ? 's use' : ' uses'} this role. Move them to another role first.`)
+      db.roles = db.roles.filter((x) => x !== r)
       return { ok: true }
     }
   }
 
   if (res === 'products') {
     if (method === 'GET') return sorted(query.includes('all=1') && authed() ? db.products : db.products.filter((x) => x.published))
-    requireAdmin()
+    requireAdmin('products')
     if (method === 'POST') {
       const data = cleanProduct(body)
       let pid = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `p${Date.now()}`
@@ -209,13 +364,13 @@ function route(method, path, body) {
 
   if (res === 'settings') {
     if (method === 'GET') return db.settings
-    requireAdmin()
+    requireAdmin('settings')
     return updateSettings(body ?? {})
   }
 
   if (res === 'orders') {
     if (method === 'POST') return placeOrder(body ?? {})
-    requireAdmin()
+    requireAdmin('orders')
     if (method === 'GET') return db.orders
     const o = find(db.orders, 'Order')
     if (method === 'PATCH') {
@@ -251,7 +406,7 @@ function route(method, path, body) {
       db.inquiries.unshift(q)
       return { ok: true }
     }
-    requireAdmin()
+    requireAdmin('inquiries')
     if (method === 'GET') return db.inquiries
     const q = find(db.inquiries, 'Inquiry')
     if (method === 'PATCH') {
@@ -305,7 +460,8 @@ export const demoApi = {
   patch: (p, body) => call('PATCH', p, body),
   del: (p) => call('DELETE', p),
   upload: async (file) => {
-    requireAdmin()
+    load()
+    requireAdmin('products')
     return { url: await toDataUrl(file) }
   },
 }

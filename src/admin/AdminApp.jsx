@@ -1,23 +1,28 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { ExternalLink, FlaskConical, Inbox, LayoutDashboard, Loader2, Lock, LogOut, Menu, Package, Settings as SettingsIcon, ShoppingCart, X } from 'lucide-react'
+import { ExternalLink, FlaskConical, Inbox, LayoutDashboard, Loader2, Lock, LogOut, Mail, Menu, Package, Settings as SettingsIcon, ShieldOff, ShoppingCart, Users, UsersRound, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Logo } from '../components/Illustrations'
 import { api, DEMO_BUILD, enterDemo, exitDemo, isDemo } from '../lib/api'
 import { DEMO_PASSWORD } from '../lib/demoApi'
+import Customers from './Customers'
 import Dashboard from './Dashboard'
 import Inquiries from './Inquiries'
 import Orders from './Orders'
 import Products from './Products'
 import Settings from './Settings'
+import Team from './Team'
 import { Button, inputClass, OverlayProvider, useToast } from './ui'
 
 const pages = {
   dashboard: { label: 'Dashboard', icon: LayoutDashboard, component: Dashboard },
   orders: { label: 'Orders', icon: ShoppingCart, component: Orders },
   products: { label: 'Products', icon: Package, component: Products },
+  customers: { label: 'Customers', icon: Users, component: Customers },
   inquiries: { label: 'Inquiries', icon: Inbox, component: Inquiries },
   settings: { label: 'Settings', icon: SettingsIcon, component: Settings },
+  team: { label: 'Team', icon: UsersRound, component: Team },
 }
+// Each page needs the permission with the same key (see PERMISSIONS in data.js).
 
 // Static previews keep the admin under #admin, so pages there are #admin-orders etc.
 const SITE_URL = DEMO_BUILD ? '#top' : '/'
@@ -28,6 +33,7 @@ const pageFromHash = () => {
 }
 
 function Login({ onSuccess }) {
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -37,7 +43,7 @@ function Login({ onSuccess }) {
     setLoading(true)
     setError('')
     try {
-      await api.post('/auth/login', { password })
+      await api.post('/auth/login', { email, password })
       onSuccess()
     } catch (err) {
       setError(err.message)
@@ -59,9 +65,16 @@ function Login({ onSuccess }) {
         <p className="mt-1 text-center text-sm text-slate/60">Sign in to manage your store</p>
         <label className="mt-8 block">
           <span className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-forest">
+            <Mail size={14} /> Email
+          </span>
+          <input type="email" autoComplete="username" autoFocus value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="you@tarucare.com.np" />
+          <span className="mt-1 block text-xs text-slate/50">Staff sign in with their email. The owner leaves this empty.</span>
+        </label>
+        <label className="mt-4 block">
+          <span className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-forest">
             <Lock size={14} /> Password
           </span>
-          <input type="password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} />
+          <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} />
         </label>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         <Button type="submit" loading={loading} className="mt-6 w-full py-3">Sign in</Button>
@@ -93,21 +106,31 @@ function Login({ onSuccess }) {
   )
 }
 
-function Shell({ onLogout }) {
+function Shell({ user, onLogout }) {
   const toast = useToast()
-  const [page, setPage] = useState(pageFromHash)
+  const can = useCallback((perm) => user.permissions.includes(perm), [user])
+  const allowed = Object.keys(pages).filter(can)
+  const [hashPage, setPage] = useState(pageFromHash)
+  // Fall back to the first page this person may see.
+  const page = can(hashPage) ? hashPage : allowed[0]
   const [navOpen, setNavOpen] = useState(false)
   const [data, setData] = useState(null)
 
   const reload = useCallback(async () => {
     try {
-      const [products, inquiries, settings, orders] = await Promise.all([api.get('/products?all=1'), api.get('/inquiries'), api.get('/settings'), api.get('/orders')])
+      // Only fetch what this person's role can see.
+      const [products, inquiries, settings, orders] = await Promise.all([
+        api.get('/products?all=1'),
+        can('inquiries') ? api.get('/inquiries') : [],
+        api.get('/settings'),
+        can('orders') ? api.get('/orders') : [],
+      ])
       setData({ products, inquiries, settings, orders })
     } catch (err) {
       if (err.status === 401) return onLogout()
       toast(err.message, 'error')
     }
-  }, [onLogout, toast])
+  }, [onLogout, toast, can])
 
   useEffect(() => {
     reload()
@@ -134,7 +157,7 @@ function Shell({ onLogout }) {
     inquiries: data?.inquiries.filter((q) => q.status === 'new').length ?? 0,
     orders: data?.orders.filter((o) => o.status === 'pending').length ?? 0,
   }
-  const Page = pages[page].component
+  const Page = page ? pages[page].component : null
 
   const nav = (
     <nav className="flex h-full flex-col">
@@ -143,7 +166,7 @@ function Shell({ onLogout }) {
         <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-cream/50">Admin</p>
       </div>
       <ul className="flex-1 space-y-1 px-3">
-        {Object.entries(pages).map(([key, { label, icon: Icon }]) => (
+        {allowed.map((key) => [key, pages[key]]).map(([key, { label, icon: Icon }]) => (
           <li key={key}>
             <button
               onClick={() => go(key)}
@@ -161,6 +184,13 @@ function Shell({ onLogout }) {
         ))}
       </ul>
       <div className="space-y-1 border-t border-cream/10 p-3">
+        <div className="mb-1 flex items-center gap-3 px-3 py-2">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream/10 text-sm font-semibold text-cream">{user.name[0]}</span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-cream">{user.name}</p>
+            <p className="truncate text-xs text-cream/50">{user.role}</p>
+          </div>
+        </div>
         <a href={SITE_URL} {...(DEMO_BUILD ? {} : { target: '_blank', rel: 'noreferrer' })} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream/75 hover:bg-cream/5 hover:text-cream">
           <ExternalLink size={18} /> View website
         </a>
@@ -210,10 +240,16 @@ function Shell({ onLogout }) {
           <span className="font-serif text-lg text-forest">{pages[page].label}</span>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
-          {data ? (
+          {!page ? (
+            <div className="mx-auto mt-16 max-w-md text-center">
+              <ShieldOff className="mx-auto text-forest/40" size={32} />
+              <p className="mt-3 font-serif text-xl text-forest">No menus are turned on for your role</p>
+              <p className="mt-1 text-sm text-slate/60">Ask the owner to give your role access in Team.</p>
+            </div>
+          ) : data ? (
             <AnimatePresence mode="wait">
               <motion.div key={page} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                <Page data={data} setData={setData} reload={reload} go={go} />
+                <Page data={data} setData={setData} reload={reload} go={go} user={user} can={can} />
               </motion.div>
             </AnimatePresence>
           ) : (
@@ -229,6 +265,18 @@ function Shell({ onLogout }) {
 
 export default function AdminApp() {
   const [authed, setAuthed] = useState(null)
+  const [user, setUser] = useState(null)
+  const check = useCallback(
+    () =>
+      api
+        .get('/auth/me')
+        .then((r) => {
+          setUser(r.user ?? null)
+          setAuthed(!!r.authed)
+        })
+        .catch(() => setAuthed(false)),
+    [],
+  )
 
   useEffect(() => {
     document.title = 'Admin – TARU CARE'
@@ -240,15 +288,15 @@ export default function AdminApp() {
       const rest = params.toString()
       window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`)
     }
-    api.get('/auth/me').then((r) => setAuthed(r.authed)).catch(() => setAuthed(false))
-  }, [])
+    check()
+  }, [check])
 
   const onLogout = useCallback(() => setAuthed(false), [])
 
   if (authed === null) return <div className="min-h-screen bg-forest" />
   return (
     <OverlayProvider>
-      {authed ? <Shell onLogout={onLogout} /> : <Login onSuccess={() => setAuthed(true)} />}
+      {authed && user ? <Shell key={user.id} user={user} onLogout={onLogout} /> : <Login onSuccess={check} />}
     </OverlayProvider>
   )
 }

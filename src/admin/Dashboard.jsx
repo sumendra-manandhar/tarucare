@@ -17,7 +17,7 @@ function Stat({ icon: Icon, label, value, sub, onClick }) {
   )
 }
 
-export default function Dashboard({ data, go }) {
+export default function Dashboard({ data, go, user, can }) {
   const { products, inquiries, orders } = data
   const fresh = inquiries.filter((q) => q.status === 'new').length
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -30,16 +30,17 @@ export default function Dashboard({ data, go }) {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl text-forest">Namaste 🙏</h1>
+      <h1 className="font-serif text-3xl text-forest">Namaste{user.owner ? '' : `, ${user.name.split(' ')[0]}`} 🙏</h1>
       <p className="mt-1 text-slate/60">Here’s what’s happening with TARU CARE.</p>
 
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat icon={ShoppingCart} label="Orders to process" value={toProcess.length} sub={`${orders.filter((o) => o.status === 'pending').length} new, waiting for a call`} onClick={() => go('orders')} />
-        <Stat icon={Wallet} label="Sales this month" value={rs(sales)} sub={`${monthOrders.length} order${monthOrders.length === 1 ? '' : 's'}, cancelled excluded`} onClick={() => go('orders')} />
-        <Stat icon={Inbox} label="New inquiries" value={fresh} sub="Waiting for a reply" onClick={() => go('inquiries')} />
-        <Stat icon={AlertTriangle} label="Low stock" value={low.length} sub={low.length ? low.map((p) => p.name.replace(' Soap', '')).join(', ') : 'Every live soap has 10+ bars'} onClick={() => go('products')} />
+        {can('orders') && <Stat icon={ShoppingCart} label="Orders to process" value={toProcess.length} sub={`${orders.filter((o) => o.status === 'pending').length} new, waiting for a call`} onClick={() => go('orders')} />}
+        {can('orders') && <Stat icon={Wallet} label="Sales this month" value={rs(sales)} sub={`${monthOrders.length} order${monthOrders.length === 1 ? '' : 's'}, cancelled excluded`} onClick={() => go('orders')} />}
+        {can('inquiries') && <Stat icon={Inbox} label="New inquiries" value={fresh} sub="Waiting for a reply" onClick={() => go('inquiries')} />}
+        {can('products') && <Stat icon={AlertTriangle} label="Low stock" value={low.length} sub={low.length ? low.map((p) => p.name.replace(' Soap', '')).join(', ') : 'Every live soap has 10+ bars'} onClick={() => go('products')} />}
       </div>
 
+      {can('orders') && (
       <section className="mt-8 rounded-2xl border border-forest/10 bg-white p-6">
         <div className="flex items-center justify-between">
           <h2 className="font-serif text-xl text-forest">Recent orders</h2>
@@ -70,8 +71,10 @@ export default function Dashboard({ data, go }) {
           </div>
         )}
       </section>
+      )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+        {can('inquiries') && (
         <section className="rounded-2xl border border-forest/10 bg-white p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-xl text-forest">Recent inquiries</h2>
@@ -103,7 +106,9 @@ export default function Dashboard({ data, go }) {
             </div>
           )}
         </section>
+        )}
 
+        {can('products') && (
         <section className="rounded-2xl border border-forest/10 bg-white p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-xl text-forest">Products</h2>
@@ -124,6 +129,7 @@ export default function Dashboard({ data, go }) {
             ))}
           </ul>
         </section>
+        )}
       </div>
     </div>
   )

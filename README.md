@@ -17,13 +17,32 @@ cp .env.example .env   # then set ADMIN_PASSWORD and SESSION_SECRET
 npm run dev            # site on http://localhost:5173, admin at /admin
 ```
 
+## Accounts and access
+
+- **Shoppers** sign in with Google at checkout (Admin → Settings → "Require Google sign-in to order"). Their orders and saved delivery details are in **My account** (person icon in the navbar), and they appear in Admin → **Customers**.
+- **Owner** signs in to `/admin` with `ADMIN_PASSWORD` (email left empty) and can use every menu.
+- **Staff** get their own email + password from the owner in Admin → **Team**. Each person has a role (Manager, Sales, Marketing, Support, or your own), and Team has a grid to choose which menus each role can open. The server enforces the same permissions, so hidden menus can't be reached through the API either. Switching an account off or setting a new password signs that person out immediately.
+
 ## Deploy on Vercel
 
 The site and the API both run on Vercel: `api/index.js` is a serverless function, and data and photos are kept in Upstash Redis (Vercel's own disk doesn't persist).
 
 1. In the Vercel project, open **Storage → Create Database → Upstash for Redis** (the free plan is fine) and connect it to this project. Vercel adds its connection variables automatically.
-2. In **Settings → Environment Variables**, add `ADMIN_PASSWORD` with the password you want for the admin panel. `SESSION_SECRET` is optional.
+2. In **Settings → Environment Variables**, add:
+   - `ADMIN_PASSWORD`: the owner password for the admin panel.
+   - `SESSION_SECRET`: a long random string (recommended in production, so sessions don't depend on the password).
+   - `GOOGLE_CLIENT_ID`: for shopper sign-in (see below).
 3. Redeploy. The admin panel is linked from the footer and lives at `/admin`.
+
+### Google sign-in
+
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create a project, set up the **OAuth consent screen** (External, app name "TARU CARE", your support email), then **Create credentials → OAuth client ID → Web application**.
+2. Under **Authorized JavaScript origins**, add every address the site is opened on, for example `https://tarucare.com.np`, `https://www.tarucare.com.np` and your `*.vercel.app` address. (No redirect URI is needed.)
+3. Copy the client ID into Vercel as `GOOGLE_CLIENT_ID` and redeploy.
+
+### Custom domain
+
+In Vercel → **Settings → Domains**, add `tarucare.com.np` (and `www`), then create the DNS records Vercel shows at your domain registrar (for `.com.np`, wherever the domain's DNS is managed). HTTPS certificates are issued automatically. Add the new domain to Google's authorized origins as well.
 
 To change the admin password, edit `ADMIN_PASSWORD` and redeploy; everyone signed in is signed out.
 

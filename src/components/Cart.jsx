@@ -1,9 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Check, CheckCircle2, Leaf, Loader2, Minus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useAccount } from '../Account'
 import { ADDED_EVENT, saveCustomer, savedCustomer, useCart } from '../Cart'
 import { api } from '../lib/api'
 import { useSiteData } from '../SiteData'
+import { SignInCard } from './Account'
 import { ProductVisual } from './Illustrations'
 
 export const formatPrice = (n) => `Rs. ${Number(n).toLocaleString('en-IN')}`
@@ -156,7 +158,17 @@ export function CartDrawer() {
   const cart = useCart()
   const { items, count, subtotal, delivery, total, free, open, setOpen, setQty, maxFor, add, clear, canBuy } = cart
   const [step, setStep] = useState('cart')
+  const account = useAccount()
   const [form, setForm] = useState(() => ({ ...EMPTY, ...savedCustomer() }))
+  // Shoppers sign in before checkout when the shop requires it (and sign-in is available).
+  const needsSignIn = !!settings.requireLogin && account.canSignIn && !account.customer
+
+  // Fill in the checkout from the signed-in account.
+  useEffect(() => {
+    const c = account.customer
+    if (!c) return
+    setForm((f) => ({ ...f, email: c.email, name: f.name || c.name, phone: f.phone || c.phone || '', address: f.address || c.address || '', city: f.city || c.city || '' }))
+  }, [account.customer])
   const [notes, setNotes] = useState('')
   const methods = settings.paymentMethods?.length ? settings.paymentMethods : ['Cash on Delivery']
   const [payment, setPayment] = useState(methods[0])
@@ -208,6 +220,7 @@ export function CartDrawer() {
       clear()
       setStep('done')
       refresh()
+      account.refresh()
     } catch (err) {
       setFailure(err.status ? err.message : `We couldn’t reach the shop just now. Please try again, or call ${settings.phone} to order.`)
     } finally {
@@ -318,16 +331,24 @@ export function CartDrawer() {
                 </motion.div>
               )}
 
-              {step === 'checkout' && (
+              {step === 'checkout' && needsSignIn && (
+                <motion.div key="signin" className="flex-1 overflow-y-auto px-5 py-6 sm:px-6" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }}>
+                  <SignInCard title="Sign in to order" text="One tap with Google. We’ll fill in your details and keep your order history in your account." />
+                </motion.div>
+              )}
+
+              {step === 'checkout' && !needsSignIn && (
                 <motion.form key="checkout" onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }}>
                   <div className="no-scrollbar flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
-                    <p className="text-sm text-ink/60">We’ll call to confirm before we deliver. No account needed.</p>
+                    <p className="text-sm text-ink/60">
+                      {account.customer ? <>Ordering as <b className="text-moss">{account.customer.email}</b>. We’ll call to confirm before we deliver.</> : 'We’ll call to confirm before we deliver. No account needed.'}
+                    </p>
                     <div className="grid grid-cols-2 gap-3">
                       <Input id="co-phone" label="Phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="98XXXXXXXX" value={form.phone} onChange={set('phone')} error={errors.phone} className="col-span-2" />
                       <Input id="co-name" label="Full name" autoComplete="name" value={form.name} onChange={set('name')} error={errors.name} className="col-span-2" />
                       <Input id="co-address" label="Delivery address" autoComplete="street-address" placeholder="Street, tole, ward, landmark" value={form.address} onChange={set('address')} error={errors.address} className="col-span-2" />
                       <Input id="co-city" label="City" autoComplete="address-level2" placeholder="Kathmandu" value={form.city} onChange={set('city')} error={errors.city} />
-                      <Input id="co-email" label="Email (optional)" type="email" autoComplete="email" value={form.email} onChange={set('email')} error={errors.email} />
+                      <Input id="co-email" label={account.customer ? 'Email' : 'Email (optional)'} type="email" autoComplete="email" value={form.email} onChange={set('email')} error={errors.email} readOnly={!!account.customer} />
                     </div>
                     <fieldset>
                       <legend className="mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-forest-light">Payment</legend>
@@ -376,7 +397,12 @@ export function CartDrawer() {
                     ))}
                     <div className="mt-2 flex justify-between border-t border-ink/10 pt-2 font-semibold text-moss"><span>{placed.payment}</span><span className="tabular-nums">{formatPrice(placed.total)}</span></div>
                   </div>
-                  <button onClick={close} className="mt-6 rounded-full bg-moss px-6 py-3 text-sm font-semibold text-cream transition hover:bg-forest-light">Continue browsing</button>
+                  <div className="mt-6 flex flex-wrap justify-center gap-2">
+                    {account.customer && (
+                      <button onClick={() => { close(); account.setOpen(true) }} className="rounded-full border border-moss/30 px-6 py-3 text-sm font-semibold text-moss transition hover:border-moss">Track in My account</button>
+                    )}
+                    <button onClick={close} className="rounded-full bg-moss px-6 py-3 text-sm font-semibold text-cream transition hover:bg-forest-light">Continue browsing</button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

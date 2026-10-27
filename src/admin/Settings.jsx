@@ -1,5 +1,5 @@
 import { Plus, Save, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, isDemo } from '../lib/api'
 import { defaultHeroSlides } from '../data'
 import { Button, Field, inputClass, Toggle, useToast } from './ui'
@@ -48,6 +48,10 @@ export default function Settings({ data, setData }) {
   const toast = useToast()
   const [s, setS] = useState(data.settings)
   const [saving, setSaving] = useState(false)
+  const [googleReady, setGoogleReady] = useState(null)
+  useEffect(() => {
+    api.get('/config').then((c) => setGoogleReady(!!c.googleClientId || !!c.demo)).catch(() => setGoogleReady(false))
+  }, [])
   const dirty = JSON.stringify(s) !== JSON.stringify(data.settings)
   const set = (k, v) => setS((x) => ({ ...x, [k]: v }))
 
@@ -101,6 +105,14 @@ export default function Settings({ data, setData }) {
             The cart is hidden while ordering is paused. Visitors can still send an order request from each soap.
           </p>
         )}
+        <div className="mt-5 rounded-xl bg-sand/50 p-4">
+          <Toggle checked={!!s.requireLogin} onChange={(v) => set('requireLogin', v)} label="Require Google sign-in to order" />
+          <p className="mt-1.5 text-xs text-slate/60">
+            {googleReady === false
+              ? 'Google sign-in isn’t set up on the server yet (GOOGLE_CLIENT_ID), so shoppers can order without signing in for now.'
+              : 'Shoppers sign in with Google at checkout. Their orders appear in their account and under Customers.'}
+          </p>
+        </div>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <Field label="Delivery fee (Rs.)">
             <input type="number" min="0" className={inputClass} value={s.deliveryFee ?? 0} onChange={(e) => set('deliveryFee', e.target.value)} />

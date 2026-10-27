@@ -15,7 +15,28 @@ export const shopDefaults = {
   maxQtyPerItem: 10,
   paymentMethods: ['Cash on Delivery', 'eSewa', 'Khalti', 'Bank Transfer'],
   deliveryNote: 'Kathmandu Valley in 1–2 days · rest of Nepal in 3–5 days',
+  // Ask shoppers to sign in with Google before ordering (only applies once Google sign-in is set up).
+  requireLogin: true,
 }
+
+// Admin menus a staff role can be given. The owner (ADMIN_PASSWORD) always has all of them.
+export const PERMISSIONS = [
+  { key: 'dashboard', label: 'Dashboard', hint: 'Sales and activity overview' },
+  { key: 'orders', label: 'Orders', hint: 'View and update orders' },
+  { key: 'products', label: 'Products', hint: 'Edit soaps, photos, prices and stock' },
+  { key: 'customers', label: 'Customers', hint: 'Customer accounts and order history' },
+  { key: 'inquiries', label: 'Inquiries', hint: 'Messages from the contact form' },
+  { key: 'settings', label: 'Settings', hint: 'Contact details, shop and checkout' },
+  { key: 'team', label: 'Team', hint: 'Staff accounts and roles' },
+]
+
+// Starting roles; all of them can be renamed, changed or deleted in Admin → Team.
+export const defaultRoles = [
+  { id: 'manager', name: 'Manager', permissions: ['dashboard', 'orders', 'products', 'customers', 'inquiries', 'settings'] },
+  { id: 'sales', name: 'Sales', permissions: ['dashboard', 'orders', 'customers', 'inquiries'] },
+  { id: 'marketing', name: 'Marketing', permissions: ['dashboard', 'products', 'inquiries'] },
+  { id: 'support', name: 'Support', permissions: ['orders', 'inquiries'] },
+]
 
 export const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
 

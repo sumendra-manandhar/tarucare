@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { AccountButton } from './Account'
 import { CartButton } from './Cart'
 import { Logo } from './Illustrations'
 
@@ -53,6 +54,7 @@ export default function Navbar() {
           </ul>
 
           <div className="flex items-center gap-1 sm:gap-2">
+            <AccountButton />
             <CartButton />
             <a
               href="#shop"
