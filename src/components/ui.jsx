@@ -1,172 +1,211 @@
-import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { motion, useInView, useMotionValue, useSpring, useTransform } from 'framer-motion'
 
-export const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  show: (i = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] },
-  }),
-}
+export const cn = (...c) => c.filter(Boolean).join(' ')
 
-export function Reveal({ as = 'div', i = 0, className = '', children, ...rest }) {
-  const Tag = motion[as]
+/** Fade + rise in when scrolled into view. */
+export function Reveal({ children, delay = 0, y = 24, className = '', as = 'div' }) {
+  const M = motion[as]
   return (
-    <Tag variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }} custom={i} className={className} {...rest}>
+    <M
+      className={className}
+      initial={{ opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
+    >
       {children}
-    </Tag>
+    </M>
   )
 }
 
-export function Eyebrow({ children, light = false, className = '' }) {
+/** Word-by-word blur-in headline (21st.dev "text effect" style). */
+export function BlurText({ text, className = '', delay = 0 }) {
   return (
-    <p className={`inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] ${light ? 'text-amber' : 'text-forest-light'} ${className}`}>
-      <span className={`h-px w-6 ${light ? 'bg-amber' : 'bg-forest-light'}`} />
-      {children}
-    </p>
+    <span className={className}>
+      {text.split(' ').map((w, i) => (
+        <motion.span
+          key={i}
+          className="inline-block pr-[0.25em]"
+          initial={{ opacity: 0, filter: 'blur(12px)', y: 18 }}
+          whileInView={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: delay + i * 0.08, ease: 'easeOut' }}
+        >
+          {w}
+        </motion.span>
+      ))}
+    </span>
   )
 }
 
-// Editorial, left-aligned section header with an optional slot on the right (filters, buttons).
-export function SectionHeader({ eyebrow, title, children, aside, light = false }) {
+export function Eyebrow({ children, light = false }) {
   return (
-    <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-      <div className="max-w-2xl">
-        <Reveal><Eyebrow light={light}>{eyebrow}</Eyebrow></Reveal>
-        <Reveal as="h2" i={1} className={`mt-4 font-serif text-4xl leading-[1.08] tracking-tight sm:text-5xl ${light ? 'text-cream' : 'text-moss'}`}>
-          {title}
+    <span
+      className={cn(
+        'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]',
+        light ? 'border-cream/20 bg-cream/5 text-amber-200' : 'border-forest/15 bg-forest/5 text-forest-500',
+      )}
+    >
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber opacity-75" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber" />
+      </span>
+      {children}
+    </span>
+  )
+}
+
+export function SectionHeading({ eyebrow, title, accent, subtitle, light = false, center = true }) {
+  return (
+    <div className={cn('mb-14 max-w-2xl', center && 'mx-auto text-center')}>
+      <Reveal>
+        <Eyebrow light={light}>{eyebrow}</Eyebrow>
+      </Reveal>
+      <h2 className={cn('mt-5 font-serif text-4xl font-semibold leading-tight sm:text-5xl', light ? 'text-cream' : 'text-forest')}>
+        <BlurText text={title} />
+        {accent && <BlurText text={accent} delay={0.2} className="italic text-amber-500" />}
+      </h2>
+      {subtitle && (
+        <Reveal delay={0.2}>
+          <p className={cn('mt-4 text-base leading-relaxed sm:text-lg', light ? 'text-cream/70' : 'text-slate-400')}>{subtitle}</p>
         </Reveal>
-        {children && (
-          <Reveal as="p" i={2} className={`mt-4 max-w-xl text-base leading-relaxed ${light ? 'text-cream/70' : 'text-ink/65'}`}>
-            {children}
-          </Reveal>
-        )}
-      </div>
-      {aside && <Reveal i={3}>{aside}</Reveal>}
+      )}
     </div>
   )
 }
 
-// ---------- shared "stage + detail card" pieces (the ingredient-orbit design language) ----------
-export const pad2 = (n) => String(n).padStart(2, '0')
-
-export function Counter({ index, total, className = '' }) {
+/** Card with a cursor-following radial spotlight + glowing border. */
+export function SpotlightCard({ children, className = '', color = 'rgba(212,163,115,0.22)', ...rest }) {
+  const ref = useRef(null)
+  const [pos, setPos] = useState({ x: -999, y: -999 })
   return (
-    <p className={`font-serif text-sm italic text-ink/50 ${className}`}>
-      {pad2(index + 1)} / {pad2(total)}
-    </p>
-  )
-}
-
-export function Dots({ count, active, onSelect, label = 'item' }) {
-  return (
-    <div className="flex gap-1.5">
-      {Array.from({ length: count }, (_, i) => (
-        <button
-          key={i}
-          onClick={() => onSelect(i)}
-          aria-label={`Show ${label} ${i + 1}`}
-          aria-current={i === active}
-          className={`h-1.5 rounded-full transition-[width,background-color] duration-300 ${i === active ? 'w-6 bg-moss' : 'w-1.5 bg-ink/20 hover:bg-ink/40'}`}
-        />
-      ))}
-    </div>
-  )
-}
-
-export function ArrowPair({ onPrev, onNext, label = 'item', light = false }) {
-  const cls = light
-    ? 'border-cream/25 text-cream hover:bg-cream hover:text-moss'
-    : 'border-ink/15 text-moss hover:bg-moss hover:text-cream'
-  return (
-    <div className="flex gap-2">
-      <button onClick={onPrev} aria-label={`Previous ${label}`} className={`grid h-11 w-11 place-items-center rounded-full border transition-colors ${cls}`}>
-        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
-      </button>
-      <button onClick={onNext} aria-label={`Next ${label}`} className={`grid h-11 w-11 place-items-center rounded-full border transition-colors ${cls}`}>
-        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
-      </button>
-    </div>
-  )
-}
-
-// Auto-advancing index that stops once the visitor takes over.
-export function useCycler(count, { ms = 4500, enabled = true } = {}) {
-  const [index, setIndex] = useState(0)
-  const [touched, setTouched] = useState(false)
-  const [paused, setPaused] = useState(false)
-  useEffect(() => {
-    if (!enabled || touched || paused || count < 2) return
-    const id = setTimeout(() => setIndex((i) => (i + 1) % count), ms)
-    return () => clearTimeout(id)
-  }, [index, enabled, touched, paused, count, ms])
-  const select = (i) => {
-    setTouched(true)
-    setIndex(((i % count) + count) % count)
-  }
-  return { index: Math.min(index, Math.max(count - 1, 0)), select, setPaused }
-}
-
-// ---------- 21st-inspired primitives: spotlight card, background paths, hand-drawn underline ----------
-
-// Card with a soft glow that follows the cursor (inspired by 21st "Spotlight Card").
-export function SpotlightCard({ as: Tag = 'div', glow = 'rgba(212,163,115,.22)', className = '', children, ...rest }) {
-  const onMove = (e) => {
-    const r = e.currentTarget.getBoundingClientRect()
-    e.currentTarget.style.setProperty('--sx', `${e.clientX - r.left}px`)
-    e.currentTarget.style.setProperty('--sy', `${e.clientY - r.top}px`)
-  }
-  return (
-    <Tag onMouseMove={onMove} className={`group/spot relative overflow-hidden ${className}`} {...rest}>
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300 group-hover/spot:opacity-100"
-        style={{ background: `radial-gradient(320px circle at var(--sx) var(--sy), ${glow}, transparent 70%)` }}
+    <div
+      ref={ref}
+      onMouseMove={(e) => {
+        const r = ref.current.getBoundingClientRect()
+        setPos({ x: e.clientX - r.left, y: e.clientY - r.top })
+      }}
+      onMouseLeave={() => setPos({ x: -999, y: -999 })}
+      className={cn('group relative overflow-hidden', className)}
+      {...rest}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 z-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: `radial-gradient(420px circle at ${pos.x}px ${pos.y}px, ${color}, transparent 45%)` }}
       />
+      <div className="relative z-10 h-full">{children}</div>
+    </div>
+  )
+}
+
+/** 3D tilt wrapper that follows the pointer. */
+export function Tilt({ children, className = '', max = 12 }) {
+  const x = useMotionValue(0.5)
+  const y = useMotionValue(0.5)
+  const rx = useSpring(useTransform(y, [0, 1], [max, -max]), { stiffness: 200, damping: 18 })
+  const ry = useSpring(useTransform(x, [0, 1], [-max, max]), { stiffness: 200, damping: 18 })
+  return (
+    <motion.div
+      className={className}
+      style={{ rotateX: rx, rotateY: ry, transformPerspective: 900 }}
+      onMouseMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect()
+        x.set((e.clientX - r.left) / r.width)
+        y.set((e.clientY - r.top) / r.height)
+      }}
+      onMouseLeave={() => {
+        x.set(0.5)
+        y.set(0.5)
+      }}
+    >
       {children}
-    </Tag>
+    </motion.div>
   )
 }
 
-// Slow-drifting vine-like lines behind a section (inspired by 21st "Background Paths").
-export function BackgroundPaths({ className = '', color = 'currentColor', count = 9 }) {
-  const paths = Array.from({ length: count }, (_, i) => {
-    const o = i * 26
-    return `M-${380 - o} -${189 + i * 6}C-${380 - o} -${189 + i * 6} -${312 - o} ${216 - i * 6} ${152 - o} ${343 - i * 6}C${616 - o} ${470 - i * 6} ${684 - o} ${875 - i * 6} ${684 - o} ${875 - i * 6}`
-  })
+export function Marquee({ children, className = '', reverse = false }) {
   return (
-    <svg viewBox="0 0 696 316" fill="none" preserveAspectRatio="xMidYMid slice" className={`pointer-events-none ${className}`} aria-hidden="true">
-      {paths.map((d, i) => (
-        <motion.path
-          key={i}
-          d={d}
-          stroke={color}
-          strokeWidth={0.5 + i * 0.05}
-          strokeOpacity={0.08 + i * 0.02}
-          initial={{ pathLength: 0.3, opacity: 0.6 }}
-          animate={{ pathLength: 1, opacity: [0.3, 0.6, 0.3], pathOffset: [0, 1, 0] }}
-          transition={{ duration: 22 + i * 2, repeat: Infinity, ease: 'linear' }}
-        />
-      ))}
-    </svg>
+    <div className={cn('group flex overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]', className)}>
+      <div
+        className="flex shrink-0 animate-marquee items-center gap-10 pr-10 group-hover:[animation-play-state:paused]"
+        style={reverse ? { animationDirection: 'reverse' } : undefined}
+      >
+        {children}
+        {children}
+      </div>
+    </div>
   )
 }
 
-// Hand-drawn brush underline that draws itself in (inspired by 21st "Sketch" components).
-export function HandUnderline({ className = '', delay = 0.6 }) {
+/** Primary CTA with a sweeping shimmer. */
+export function ShimmerButton({ children, className = '', ...rest }) {
   return (
-    <svg viewBox="0 0 300 20" preserveAspectRatio="none" className={className} aria-hidden="true">
-      <motion.path
-        d="M4 14 C 60 4, 120 4, 170 10 S 260 16, 296 6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="5"
-        strokeLinecap="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.1, delay, ease: [0.65, 0, 0.35, 1] }}
-      />
-    </svg>
+    <motion.a
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      className={cn(
+        'relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-forest px-7 py-3.5 text-sm font-semibold text-cream shadow-[0_10px_30px_-10px_rgba(27,67,50,0.7)]',
+        'before:absolute before:inset-0 before:animate-shimmer before:bg-[linear-gradient(110deg,transparent_25%,rgba(212,163,115,0.45)_50%,transparent_75%)] before:bg-[length:200%_100%]',
+        className,
+      )}
+      {...rest}
+    >
+      <span className="relative z-10 inline-flex items-center gap-2">{children}</span>
+    </motion.a>
+  )
+}
+
+export function GhostButton({ children, className = '', ...rest }) {
+  return (
+    <motion.a
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      className={cn(
+        'inline-flex items-center justify-center gap-2 rounded-full border border-forest/20 bg-white/60 px-7 py-3.5 text-sm font-semibold text-forest backdrop-blur transition-colors hover:border-forest/40 hover:bg-white',
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </motion.a>
+  )
+}
+
+/** Counts up to a number once visible. */
+export function Counter({ to, suffix = '' }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true })
+  const mv = useMotionValue(0)
+  const spring = useSpring(mv, { duration: 1800, bounce: 0 })
+  const display = useTransform(spring, (v) => `${Math.round(v)}${suffix}`)
+  useEffect(() => {
+    if (inView) mv.set(to)
+  }, [inView, mv, to])
+  return <motion.span ref={ref}>{display}</motion.span>
+}
+
+/** Soft animated aurora blobs used as section backgrounds. */
+export function Aurora({ className = '', colors = ['#95b8a0', '#d4a373', '#2d6a4f'] }) {
+  return (
+    <div className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)} aria-hidden="true">
+      <div className="absolute -left-24 -top-24 h-[28rem] w-[28rem] animate-aurora rounded-full opacity-40 blur-3xl" style={{ background: colors[0] }} />
+      <div className="absolute -right-24 top-1/3 h-[24rem] w-[24rem] animate-aurora rounded-full opacity-30 blur-3xl [animation-delay:-6s]" style={{ background: colors[1] }} />
+      <div className="absolute bottom-0 left-1/3 h-[22rem] w-[22rem] animate-aurora rounded-full opacity-20 blur-3xl [animation-delay:-12s]" style={{ background: colors[2] }} />
+    </div>
+  )
+}
+
+export function GridPattern({ className = '' }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn('pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]', className)}
+      style={{
+        backgroundImage:
+          'linear-gradient(to right, rgba(27,67,50,0.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(27,67,50,0.07) 1px, transparent 1px)',
+        backgroundSize: '44px 44px',
+      }}
+    />
   )
 }

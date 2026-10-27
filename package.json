@@ -1,29 +1,24 @@
 {
-  "name": "tarucare",
+  "name": "taru-care",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n web,api -c green,yellow \"vite\" \"npm:server:dev\"",
-    "server:dev": "node --env-file-if-exists=.env --watch-path=server --watch-preserve-output server/index.js",
+    "dev": "vite",
     "build": "vite build",
-    "start": "NODE_ENV=production node --env-file-if-exists=.env server/index.js",
     "preview": "vite preview"
   },
   "dependencies": {
-    "cookie-parser": "^1.4.7",
-    "express": "^4.21.1",
-    "framer-motion": "^11.11.17",
-    "lucide-react": "^0.460.0",
-    "multer": "^1.4.5-lts.1",
+    "framer-motion": "^11.11.0",
+    "lucide-react": "^0.454.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.17",
-    "@vitejs/plugin-react": "^4.3.4",
-    "concurrently": "^9.1.0",
-    "tailwindcss": "^4.0.17",
-    "vite": "^5.4.11"
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "vite": "^5.4.10"
   }
 }

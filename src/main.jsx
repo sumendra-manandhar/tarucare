@@ -1,23 +1,16 @@
-import React, { Suspense, lazy } from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import { SiteDataProvider } from './SiteData.jsx'
+import { MotionConfig } from 'framer-motion'
+import App from './App'
+import { StoreProvider } from './store'
 import './index.css'
-
-// Admin code is split into its own chunk so visitors never download it.
-const AdminApp = lazy(() => import('./admin/AdminApp.jsx'))
-const isAdmin = window.location.pathname.startsWith('/admin')
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {isAdmin ? (
-      <Suspense fallback={null}>
-        <AdminApp />
-      </Suspense>
-    ) : (
-      <SiteDataProvider>
+    <MotionConfig reducedMotion="user">
+      <StoreProvider>
         <App />
-      </SiteDataProvider>
-    )}
-  </React.StrictMode>
+      </StoreProvider>
+    </MotionConfig>
+  </React.StrictMode>,
 )
