@@ -35,13 +35,13 @@ function seed() {
     products,
     settings: { ...contact, ...shopDefaults, showTeaser: true, teaserText: 'Exciting new herbal blends are coming soon for every skin need.', heroSlides: defaultHeroSlides },
     orders: [
-      order('TC-1003', 2, 'pending', { name: 'Example: Prakriti J.', phone: '9800000003', email: '', address: 'Jhamsikhel', city: 'Lalitpur' }, [line('turmeric', 2), line('honey', 1)], 'Cash on Delivery'),
-      order('TC-1002', 26, 'confirmed', { name: 'Example: Suman R.', phone: '9800000002', email: '', address: 'Lakeside', city: 'Pokhara' }, [line('charcoal', 1)], 'eSewa'),
-      order('TC-1001', 80, 'delivered', { name: 'Example: Anjali M.', phone: '9800000001', email: '', address: 'Kirtipur-5', city: 'Kathmandu' }, [line('sandalwood', 2), line('goatmilk-tulsi', 1)], 'Khalti'),
+      order('TC-1003', 2, 'pending', { name: 'Prakriti J.', phone: '9800000003', email: '', address: 'Jhamsikhel', city: 'Lalitpur' }, [line('turmeric', 2), line('honey', 1)], 'Cash on Delivery'),
+      order('TC-1002', 26, 'confirmed', { name: 'Suman R.', phone: '9800000002', email: '', address: 'Lakeside', city: 'Pokhara' }, [line('charcoal', 1)], 'eSewa'),
+      order('TC-1001', 80, 'delivered', { name: 'Anjali M.', phone: '9800000001', email: '', address: 'Kirtipur-5', city: 'Kathmandu' }, [line('sandalwood', 2), line('goatmilk-tulsi', 1)], 'Khalti'),
     ],
     inquiries: [
-      { id: 'q2', type: 'general', name: 'Example: Rohan G.', email: 'rohan@example.com', phone: '', subject: 'Wholesale for my salon', message: 'Do you offer wholesale pricing for 50+ bars a month?', productId: '', productName: '', quantity: null, status: 'new', notes: '', createdAt: ago(5), updatedAt: ago(5) },
-      { id: 'q1', type: 'general', name: 'Example: Sophie L.', email: 'sophie@example.com', phone: '', subject: 'Export to France', message: 'We are a natural products boutique interested in importing your soaps.', productId: '', productName: '', quantity: null, status: 'resolved', notes: '', createdAt: ago(60), updatedAt: ago(60) },
+      { id: 'q2', type: 'general', name: 'Rohan G.', email: 'rohan@example.com', phone: '', subject: 'Wholesale for my salon', message: 'Do you offer wholesale pricing for 50+ bars a month?', productId: '', productName: '', quantity: null, status: 'new', notes: '', createdAt: ago(5), updatedAt: ago(5) },
+      { id: 'q1', type: 'general', name: 'Sophie L.', email: 'sophie@example.com', phone: '', subject: 'Export to France', message: 'We are a natural products boutique interested in importing your soaps.', productId: '', productName: '', quantity: null, status: 'resolved', notes: '', createdAt: ago(60), updatedAt: ago(60) },
     ],
   }
 }
@@ -71,6 +71,15 @@ const authed = () => {
     return false
   }
 }
+// Signs the visitor straight into the demo admin (no password needed).
+export function startDemoSession() {
+  try {
+    sessionStorage.setItem(SESSION, '1')
+  } catch {
+    /* storage blocked: the demo login form still works */
+  }
+}
+
 const requireAdmin = () => {
   if (!authed()) throw new ApiError('Not signed in', 401)
 }

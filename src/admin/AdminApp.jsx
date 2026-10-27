@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { ExternalLink, Inbox, LayoutDashboard, Loader2, Lock, LogOut, Menu, Package, Settings as SettingsIcon, ShoppingCart, X } from 'lucide-react'
+import { ExternalLink, FlaskConical, Inbox, LayoutDashboard, Loader2, Lock, LogOut, Menu, Package, Settings as SettingsIcon, ShoppingCart, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Logo } from '../components/Illustrations'
-import { api, DEMO } from '../lib/api'
+import { api, DEMO_BUILD, enterDemo, exitDemo, isDemo } from '../lib/api'
 import { DEMO_PASSWORD } from '../lib/demoApi'
 import Dashboard from './Dashboard'
 import Inquiries from './Inquiries'
@@ -20,10 +20,10 @@ const pages = {
 }
 
 // Static previews keep the admin under #admin, so pages there are #admin-orders etc.
-const SITE_URL = DEMO ? '#top' : '/'
-const hashFor = (key) => (DEMO ? (key === 'dashboard' ? '#admin' : `#admin-${key}`) : `/${key}`)
+const SITE_URL = DEMO_BUILD ? '#top' : '/'
+const hashFor = (key) => (DEMO_BUILD ? (key === 'dashboard' ? '#admin' : `#admin-${key}`) : `/${key}`)
 const pageFromHash = () => {
-  const key = window.location.hash.replace(DEMO ? /^#admin-?/ : '#/', '')
+  const key = window.location.hash.replace(DEMO_BUILD ? /^#admin-?/ : '#/', '')
   return pages[key] ? key : 'dashboard'
 }
 
@@ -65,10 +65,27 @@ function Login({ onSuccess }) {
         </label>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         <Button type="submit" loading={loading} className="mt-6 w-full py-3">Sign in</Button>
-        {DEMO && (
+        {DEMO_BUILD && (
           <p className="mt-4 rounded-xl bg-sand px-3 py-2 text-center text-xs text-slate/70">
             Demo password: <span className="font-mono font-semibold text-forest">{DEMO_PASSWORD}</span>
           </p>
+        )}
+        {!DEMO_BUILD && (
+          <div className="mt-6 border-t border-forest/10 pt-5 text-center">
+            <Button
+              type="button"
+              variant="secondary"
+              icon={FlaskConical}
+              className="w-full"
+              onClick={() => {
+                enterDemo()
+                onSuccess()
+              }}
+            >
+              Explore the demo admin
+            </Button>
+            <p className="mt-2 text-xs text-slate/50">No password needed. Uses sample data saved only in this browser, so the real shop is never changed.</p>
+          </div>
         )}
         <a href={SITE_URL} className="mt-4 block text-center text-xs text-slate/50 hover:text-forest">← Back to website</a>
       </motion.form>
@@ -109,6 +126,7 @@ function Shell({ onLogout }) {
 
   const logout = async () => {
     await api.post('/auth/logout').catch(() => {})
+    if (isDemo() && !DEMO_BUILD) exitDemo()
     onLogout()
   }
 
@@ -143,7 +161,7 @@ function Shell({ onLogout }) {
         ))}
       </ul>
       <div className="space-y-1 border-t border-cream/10 p-3">
-        <a href={SITE_URL} {...(DEMO ? {} : { target: '_blank', rel: 'noreferrer' })} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream/75 hover:bg-cream/5 hover:text-cream">
+        <a href={SITE_URL} {...(DEMO_BUILD ? {} : { target: '_blank', rel: 'noreferrer' })} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream/75 hover:bg-cream/5 hover:text-cream">
           <ExternalLink size={18} /> View website
         </a>
         <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream/75 hover:bg-cream/5 hover:text-cream">
@@ -178,6 +196,13 @@ function Shell({ onLogout }) {
       </AnimatePresence>
 
       <div className="lg:pl-64">
+        {isDemo() && !DEMO_BUILD && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber px-4 py-2 text-center text-sm text-forest">
+            <FlaskConical size={16} />
+            <span><b>Demo mode.</b> Sample data saved only in this browser. The real shop isn’t affected.</span>
+            <button onClick={() => { exitDemo(); onLogout() }} className="rounded-full bg-forest px-3 py-1 text-xs font-semibold text-cream hover:bg-forest-light">Exit demo</button>
+          </div>
+        )}
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-forest/10 bg-cream/90 px-4 py-3 backdrop-blur lg:hidden">
           <button onClick={() => setNavOpen(true)} aria-label="Open menu" className="rounded-lg p-2 text-forest">
             <Menu size={22} />
@@ -207,6 +232,14 @@ export default function AdminApp() {
 
   useEffect(() => {
     document.title = 'Admin – TARU CARE'
+    // /admin?demo is a shareable link that opens the demo dashboard directly.
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('demo') && !DEMO_BUILD) {
+      enterDemo()
+      params.delete('demo')
+      const rest = params.toString()
+      window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`)
+    }
     api.get('/auth/me').then((r) => setAuthed(r.authed)).catch(() => setAuthed(false))
   }, [])
 

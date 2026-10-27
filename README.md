@@ -27,6 +27,10 @@ The site and the API both run on Vercel: `api/index.js` is a serverless function
 
 To change the admin password, edit `ADMIN_PASSWORD` and redeploy; everyone signed in is signed out.
 
+### Demo admin (for showing clients)
+
+Anyone can try the admin without a password or any storage connected: click **Explore the demo admin** on the sign-in page, or share the direct link **`/admin?demo`**. It runs the full admin on sample data kept only in that visitor's browser (`src/lib/demoApi.js`), with a banner and an **Exit demo** button. The real shop's data is never touched.
+
 ## Self-hosted production
 
 ```bash

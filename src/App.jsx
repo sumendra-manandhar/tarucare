@@ -12,6 +12,7 @@ import Process from './components/Process'
 import Ritual from './components/Ritual'
 import Story from './components/Story'
 import { AddedToast, CartDrawer } from './components/Cart'
+import { DEMO_BUILD, exitDemo, isDemo } from './lib/api'
 
 // Product-first flow: hook → shop → learn → trust → answer doubts → convert.
 export default function App() {
@@ -35,6 +36,22 @@ export default function App() {
       </main>
       <Footer />
       <FloatingCTA />
+      {isDemo() && !DEMO_BUILD && (
+        // Someone exploring the demo admin sees its sample data here too; orders go to the demo, not the shop.
+        <div className="fixed bottom-20 left-4 z-[66] flex items-center gap-2 rounded-full bg-amber py-1.5 pl-4 pr-1.5 text-xs font-semibold text-moss shadow-lg sm:bottom-6">
+          Demo mode: orders aren’t sent to the shop
+          <a href="/admin" className="rounded-full bg-moss px-3 py-1 text-cream">Admin</a>
+          <button
+            onClick={() => {
+              exitDemo()
+              window.location.reload()
+            }}
+            className="rounded-full bg-cream px-3 py-1 text-moss"
+          >
+            Exit
+          </button>
+        </div>
+      )}
       <CartDrawer />
       <AddedToast />
     </MotionConfig>
