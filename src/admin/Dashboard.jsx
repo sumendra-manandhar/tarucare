@@ -1,156 +1,129 @@
-import { useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { AlertTriangle, ChevronRight, Inbox, ShoppingCart, TrendingUp, Wallet } from 'lucide-react'
-import { SoapBar } from '../components/Art'
-import { cn } from '../components/ui'
-import { useStore } from '../store'
-import { Card, StatusBadge, Stat, ago, rs } from './ui'
+import { AlertTriangle, ArrowRight, Eye, EyeOff, Inbox, ShoppingBag, ShoppingCart, Wallet } from 'lucide-react'
+import { SoapBox } from '../components/Illustrations'
+import { EmptyState, OrderBadge, rs, StatusBadge, timeAgo } from './ui'
 
-export function Dashboard({ go }) {
-  const { products, inquiries, orders } = useStore()
-  const live = orders.filter((o) => o.status !== 'cancelled')
-  const weekAgo = Date.now() - 7 * 86400000
-  const revenue7 = live.filter((o) => o.date >= weekAgo).reduce((s, o) => s + o.total, 0)
+function Stat({ icon: Icon, label, value, sub, onClick }) {
+  return (
+    <button onClick={onClick} className="group rounded-2xl border border-forest/10 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-forest/5">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-slate/60">{label}</span>
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-forest/5 text-forest transition group-hover:bg-forest group-hover:text-amber">
+          <Icon size={18} />
+        </span>
+      </div>
+      <p className="mt-3 font-serif text-4xl text-forest">{value}</p>
+      {sub && <p className="mt-1 text-xs text-slate/50">{sub}</p>}
+    </button>
+  )
+}
+
+export default function Dashboard({ data, go }) {
+  const { products, inquiries, orders } = data
+  const fresh = inquiries.filter((q) => q.status === 'new').length
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  const monthOrders = orders.filter((o) => o.status !== 'cancelled' && new Date(o.createdAt) >= monthStart)
+  const sales = monthOrders.reduce((n, o) => n + o.total, 0)
   const toProcess = orders.filter((o) => o.status === 'pending' || o.status === 'confirmed')
-  const sold = {}
-  live.forEach((o) => o.items.forEach((i) => (sold[i.id] = (sold[i.id] || 0) + i.qty)))
-  const best = products.filter((p) => sold[p.id]).sort((a, b) => sold[b.id] - sold[a.id]).slice(0, 3)
-  const active = products.filter((p) => p.active)
-  const stockUnits = products.reduce((s, p) => s + Number(p.stock), 0)
-  const stockValue = products.reduce((s, p) => s + p.stock * p.price, 0)
-  const newCount = inquiries.filter((i) => i.status === 'new').length
-  const low = products.filter((p) => p.stock < 15)
-  const maxStock = Math.max(...products.map((p) => p.stock), 1)
-
-  const days = useMemo(() => {
-    const out = []
-    for (let d = 6; d >= 0; d--) {
-      const start = new Date()
-      start.setHours(0, 0, 0, 0)
-      start.setDate(start.getDate() - d)
-      const end = start.getTime() + 86400000
-      const dayOrders = live.filter((o) => o.date >= start.getTime() && o.date < end)
-      out.push({ label: start.toLocaleDateString('en-GB', { weekday: 'short' }), count: dayOrders.length, total: dayOrders.reduce((s, o) => s + o.total, 0) })
-    }
-    return out
-  }, [live])
-  const maxDay = Math.max(...days.map((d) => d.total), 1)
-
+  const low = products.filter((p) => p.published && p.stock != null && p.stock <= 10)
+  const recent = inquiries.slice(0, 5)
+  const recentOrders = orders.slice(0, 6)
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat icon={Wallet} label="Sales · last 7 days" value={rs(revenue7)} hint={`${live.filter((o) => o.date >= weekAgo).length} orders, cancelled excluded`} />
-        <Stat icon={ShoppingCart} label="Orders to process" value={toProcess.length} hint={`${orders.filter((o) => o.status === 'pending').length} pending · ${orders.filter((o) => o.status === 'confirmed').length} confirmed`} tone="sage" delay={0.05} />
-        <Stat icon={Inbox} label="New inquiries" value={newCount} hint={`${inquiries.length} total messages`} tone="amber" delay={0.1} />
-        <Stat icon={AlertTriangle} label="Low stock" value={low.length} hint="Below 15 units" tone={low.length ? 'red' : 'sage'} delay={0.15} />
+    <div>
+      <h1 className="font-serif text-3xl text-forest">Namaste 🙏</h1>
+      <p className="mt-1 text-slate/60">Here’s what’s happening with TARU CARE.</p>
+
+      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stat icon={ShoppingCart} label="Orders to process" value={toProcess.length} sub={`${orders.filter((o) => o.status === 'pending').length} new, waiting for a call`} onClick={() => go('orders')} />
+        <Stat icon={Wallet} label="Sales this month" value={rs(sales)} sub={`${monthOrders.length} order${monthOrders.length === 1 ? '' : 's'}, cancelled excluded`} onClick={() => go('orders')} />
+        <Stat icon={Inbox} label="New inquiries" value={fresh} sub="Waiting for a reply" onClick={() => go('inquiries')} />
+        <Stat icon={AlertTriangle} label="Low stock" value={low.length} sub={low.length ? low.map((p) => p.name.replace(' Soap', '')).join(', ') : 'Every live soap has 10+ bars'} onClick={() => go('products')} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-serif text-xl text-forest">Inventory by variant</h3>
-              <p className="text-xs text-slate-400">{stockUnits} units on hand · {rs(stockValue)} at retail · {active.length}/{products.length} products live</p>
-            </div>
-            <button onClick={() => go('products')} className="text-xs font-semibold text-forest-500 hover:underline">Manage</button>
-          </div>
-          <div className="mt-6 space-y-3">
-            {products.map((p, i) => (
-              <div key={p.id} className="flex items-center gap-3">
-                <SoapBar base={p.base} accent={p.accent} label="" className="h-8 w-11 shrink-0" />
-                <span className="w-36 shrink-0 truncate text-sm text-slate-500">{p.name.replace(' Soap', '')}</span>
-                <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-cream-100">
-                  <motion.div
-                    className={cn('h-full rounded-full', p.stock < 15 ? 'bg-red-400' : 'bg-forest-400')}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(p.stock / maxStock) * 100}%` }}
-                    transition={{ delay: 0.1 + i * 0.05, duration: 0.8 }}
-                  />
-                </div>
-                <span className="w-10 text-right text-sm font-semibold tabular-nums text-forest">{p.stock}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <h3 className="font-serif text-xl text-forest">Sales this week</h3>
-          <p className="text-xs text-slate-400">Order value per day (Rs.)</p>
-          <div className="mt-6 flex h-40 items-end gap-2">
-            {days.map((d, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-2">
-                <span className="text-[11px] font-semibold tabular-nums text-forest" title={`${d.count} orders`}>{d.total ? `${(d.total / 1000).toFixed(1)}k` : ''}</span>
-                <motion.div
-                  className="w-full rounded-t-lg bg-amber"
-                  initial={{ height: 0 }}
-                  animate={{ height: `${(d.total / maxDay) * 100}px` }}
-                  transition={{ delay: 0.2 + i * 0.05, duration: 0.6 }}
-                  style={{ minHeight: 4 }}
-                />
-                <span className="text-[11px] text-slate-400">{d.label}</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 border-t border-forest/10 pt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Best sellers</p>
-            <div className="mt-3 space-y-2">
-              {best.map((p) => (
-                <div key={p.id} className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">{p.name}</span>
-                  <span className="font-semibold tabular-nums text-forest">{sold[p.id]} sold</span>
-                </div>
-              ))}
-              {!best.length && <p className="text-sm text-slate-400">No sales yet.</p>}
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-        <Card>
-          <div className="flex items-center justify-between">
-            <h3 className="font-serif text-xl text-forest">Recent orders</h3>
-            <button onClick={() => go('orders')} className="flex items-center text-xs font-semibold text-forest-500 hover:underline">
-              View all <ChevronRight className="h-3 w-3" />
-            </button>
-          </div>
+      <section className="mt-8 rounded-2xl border border-forest/10 bg-white p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-xl text-forest">Recent orders</h2>
+          <button onClick={() => go('orders')} className="inline-flex items-center gap-1 text-sm font-semibold text-forest hover:underline">
+            View all <ArrowRight size={14} />
+          </button>
+        </div>
+        {recentOrders.length ? (
           <ul className="mt-4 divide-y divide-forest/5">
-            {orders.slice(0, 5).map((o) => (
+            {recentOrders.map((o) => (
               <li key={o.id} className="flex items-center gap-3 py-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-forest-100 text-sm font-semibold text-forest">{o.customer.name[0]}</span>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber/20 text-amber-dark"><ShoppingCart size={16} /></span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-forest">{o.id} · {o.customer.name}</p>
-                  <p className="truncate text-xs text-slate-400">{o.items.reduce((n, i) => n + i.qty, 0)} items · {o.customer.city} · {ago(o.date)}</p>
+                  <p className="truncate text-xs text-slate/60">{o.items.map((i) => `${i.qty} × ${i.name}`).join(', ')}</p>
                 </div>
                 <span className="hidden text-sm font-semibold tabular-nums text-forest sm:block">{rs(o.total)}</span>
-                <StatusBadge status={o.status} />
+                <div className="text-right">
+                  <OrderBadge status={o.status} />
+                  <p className="mt-1 text-[11px] text-slate/40">{timeAgo(o.createdAt)}</p>
+                </div>
               </li>
             ))}
-            {!orders.length && <li className="py-6 text-center text-sm text-slate-400">No orders yet.</li>}
           </ul>
-        </Card>
-        <Card className="bg-forest text-cream">
-          <div className="flex items-center gap-2 text-amber">
-            <TrendingUp className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Needs attention</span>
+        ) : (
+          <div className="mt-4">
+            <EmptyState icon={ShoppingCart} title="No orders yet">Orders placed through the website cart will appear here.</EmptyState>
           </div>
-          {low.length ? (
-            <ul className="mt-4 space-y-3">
-              {low.map((p) => (
-                <li key={p.id} className="flex items-center gap-3 rounded-xl bg-cream/5 p-3">
-                  <SoapBar base={p.base} accent={p.accent} label="" className="h-8 w-11" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold">{p.name}</p>
-                    <p className="text-xs text-cream/60">{p.stock === 0 ? 'Out of stock' : `Only ${p.stock} units left`}</p>
+        )}
+      </section>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+        <section className="rounded-2xl border border-forest/10 bg-white p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-serif text-xl text-forest">Recent inquiries</h2>
+            <button onClick={() => go('inquiries')} className="inline-flex items-center gap-1 text-sm font-semibold text-forest hover:underline">
+              View all <ArrowRight size={14} />
+            </button>
+          </div>
+          {recent.length ? (
+            <ul className="mt-4 divide-y divide-forest/5">
+              {recent.map((q) => (
+                <li key={q.id} className="flex items-center gap-3 py-3">
+                  <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${q.type === 'order' ? 'bg-amber/20 text-amber-dark' : 'bg-forest/5 text-forest'}`}>
+                    {q.type === 'order' ? <ShoppingBag size={16} /> : <Inbox size={16} />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-forest">{q.name}</p>
+                    <p className="truncate text-xs text-slate/60">{q.type === 'order' ? `${q.quantity} × ${q.productName}` : q.subject}</p>
+                  </div>
+                  <div className="hidden text-right sm:block">
+                    <StatusBadge status={q.status} />
+                    <p className="mt-1 text-[11px] text-slate/40">{timeAgo(q.createdAt)}</p>
                   </div>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-4 text-sm text-cream/70">All variants are well stocked. 🌿</p>
+            <div className="mt-4">
+              <EmptyState icon={Inbox} title="No inquiries yet">Messages and order requests from the website will appear here.</EmptyState>
+            </div>
           )}
-        </Card>
+        </section>
+
+        <section className="rounded-2xl border border-forest/10 bg-white p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-serif text-xl text-forest">Products</h2>
+            <button onClick={() => go('products')} className="inline-flex items-center gap-1 text-sm font-semibold text-forest hover:underline">
+              Manage <ArrowRight size={14} />
+            </button>
+          </div>
+          <ul className="mt-4 space-y-2">
+            {products.slice(0, 7).map((p) => (
+              <li key={p.id} className="flex items-center gap-3">
+                <div className="w-14 shrink-0">
+                  {p.image ? <img src={p.image} alt="" className="aspect-square w-full rounded-lg object-cover" /> : <SoapBox product={p} className="w-full" />}
+                </div>
+                <span className="flex-1 truncate text-sm text-forest">{p.name}</span>
+                {p.stock != null && <span className={`text-xs font-semibold tabular-nums ${p.stock <= 10 ? 'text-amber-dark' : 'text-slate/50'}`}>{p.stock}</span>}
+                {p.published ? <Eye size={15} className="text-emerald-700" aria-label="Live" /> : <EyeOff size={15} className="text-slate/40" aria-label="Hidden" />}
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   )

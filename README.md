@@ -1,39 +1,29 @@
 # TARU CARE – Herbal Soap
 
-Marketing website and admin panel for TARU CARE, handcrafted Ayurvedic herbal soaps from Nepal.
+Product website and admin panel for TARU CARE, handcrafted Ayurvedic herbal soaps from Nepal.
 
-Built with React 18, Vite, Tailwind CSS, Framer Motion and Lucide icons.
+- **Website:** themed hero carousel, shop by skin need, all soaps, ingredients, how to use, story, quality process, FAQ, contact.
+- **Shop:** add to cart from any soap, cart drawer with free-delivery progress and "pairs well with" suggestions, phone-first checkout (no account), order confirmation. Prices and stock are checked on the server.
+- **Product photos:** each soap has a photo gallery (up to 12, with captions). The first photo is the cover on cards; the product popup shows the full gallery with swipe and full-screen view.
+- **Admin (`/admin`):** orders (status flow pending → confirmed → shipped → delivered, cancel returns stock, notes, CSV export), products (photo gallery upload/reorder/captions, price, stock, skin benefits, visibility), inquiries, contact details, hero slides, and shop settings (cart on/off, delivery fee, free-delivery threshold, max per soap, payment methods, delivery promise).
 
-## Getting started
+**Stack:** React 18, Vite, Tailwind CSS v4, Framer Motion, Lucide · Express API with a JSON-file database.
+
+## Run locally
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # production build in dist/
+cp .env.example .env   # then set ADMIN_PASSWORD and SESSION_SECRET
+npm run dev            # site on http://localhost:5173, admin at /admin
 ```
 
-## Admin panel
+## Production
 
-Open `/#admin` (or use the "Admin" link in the footer).
-
-Demo login: `admin` / `taru@123`
-
-- **Dashboard**: stock per soap, inquiries this week, low-stock alerts
-- **Products**: add, edit, hide or delete soaps with a live soap-colour preview
-- **Inquiries**: messages sent from the contact form; mark read/replied, reply by email
-- **Settings**: contact details, social handles and the announcement bar
-
-> Data is stored in the browser's `localStorage`, and the login is a demo check in the
-> front end. Connect a real backend (API, database and authentication) before going live.
-
-## Structure
-
+```bash
+npm run build
+npm start              # serves the built site + API on PORT (default 3001)
 ```
-src/
-  admin/Admin.jsx        admin panel (login, dashboard, products, inquiries, settings)
-  site/                  website sections (Hero, About, Collection, Ingredients, Benefits, Contact)
-  components/Art.jsx     SVG soap-bar and ingredient illustrations
-  components/ui.jsx      animated UI primitives (spotlight card, marquee, tilt, blur text…)
-  data.js                default products, ingredients, settings and sample inquiries
-  store.jsx              shared state persisted to localStorage
-```
+
+A static preview without the API can be built with `VITE_DEMO=1 npm run build`: the cart works and checkout shows a sample confirmation without saving an order.
+
+Data lives in `server/db.json` and uploaded photos in `server/uploads/` — both are git-ignored, so back them up separately.

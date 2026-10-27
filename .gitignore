@@ -1,4 +1,11 @@
 node_modules
 dist
-*.zip
+.env
+server/db.json
+server/db.json.tmp
+server/uploads/*
+!server/uploads/.gitkeep
+
+# local tooling
 .DS_Store
+*.log

@@ -1,140 +1,127 @@
+import { Reorder, motion, useDragControls } from 'framer-motion'
+import { Eye, EyeOff, GripVertical, ImagePlus, Images, Loader2, Package, Pencil, Plus, Search, Star, Trash2, X } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { AnimatePresence, Reorder, motion, useDragControls } from 'framer-motion'
-import { GripVertical, ImagePlus, Images, Loader2, Pencil, Plus, Save, Star, Trash2, X } from 'lucide-react'
-import { SoapBar } from '../components/Art'
-import { Photo } from '../components/Gallery'
-import { cn } from '../components/ui'
-import { CATEGORIES } from '../data'
-import { deletePhotos, resizeImage, savePhoto } from '../photos'
-import { useStore } from '../store'
-import { ProductThumb } from '../site/Cart'
-import { Card, Confirm, Toggle } from './ui'
+import { Ingredient, SoapBox } from '../components/Illustrations'
+import { benefitChoices, filters } from '../data'
+import { api } from '../lib/api'
+import { barFromBase } from '../lib/color'
+import { Button, Chip, Drawer, EmptyState, Field, inputClass, Toggle, useConfirm, useToast } from './ui'
+
+const CATEGORIES = filters.filter((f) => f !== 'All')
+const INGREDIENTS = [
+  ['turmeric', 'Turmeric'], ['beetroot', 'Beetroot'], ['sandalwood', 'Sandalwood'], ['titepati', 'Titepati'],
+  ['tulsi', 'Tulsi'], ['honey', 'Honey'], ['milk', 'Goat Milk'], ['charcoal', 'Charcoal'],
+]
+const SWATCHES = ['#e58a2c', '#d9707f', '#e3cfa6', '#8db35f', '#e39a35', '#efe9dc', '#35383b', '#7a9e7e', '#b5835a', '#9b6fb0']
+
+const blank = () => ({
+  name: '', local: '', tagline: '', description: '', benefits: [''], categories: [], ingredients: [], skinBenefits: [],
+  bar: barFromBase('#8db35f'), image: '', photos: [], price: '', stock: '', published: true, order: '',
+})
 
 const MAX_PHOTOS = 12
 
-function PhotoRow({ photo, index, onCaption, onCover, onRemove }) {
-  const controls = useDragControls()
+// Phone photos are often larger than the 4 MB upload limit, so shrink them in the browser first.
+function shrink(file, max = 2000) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const scale = Math.min(1, max / Math.max(img.width, img.height))
+      if (scale === 1 && file.size < 3.5 * 1024 * 1024) return resolve(file)
+      const c = Object.assign(document.createElement('canvas'), { width: Math.round(img.width * scale), height: Math.round(img.height * scale) })
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height)
+      c.toBlob((b) => resolve(b ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file), 'image/jpeg', 0.86)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      resolve(file)
+    }
+    img.src = url
+  })
+}
+
+function PhotoRow({ ph, index, onChange, onCover, onRemove }) {
+  const drag = useDragControls()
   return (
-    <Reorder.Item
-      value={photo}
-      dragListener={false}
-      dragControls={controls}
-      className="flex items-center gap-3 rounded-xl border border-forest/10 bg-white p-2 shadow-sm"
-      whileDrag={{ scale: 1.02, boxShadow: '0 12px 30px -10px rgba(27,67,50,.35)' }}
-    >
-      <button
-        type="button"
-        onPointerDown={(e) => controls.start(e)}
-        className="grid h-8 w-6 shrink-0 cursor-grab touch-none place-items-center text-slate-400 active:cursor-grabbing"
-        aria-label="Drag to reorder"
-      >
-        <GripVertical className="h-4 w-4" />
+    <Reorder.Item value={ph} dragListener={false} dragControls={drag} className="flex items-center gap-3 rounded-xl border border-forest/10 bg-white p-2" whileDrag={{ scale: 1.02, boxShadow: '0 12px 30px -12px rgba(27,67,50,.4)' }}>
+      <button type="button" onPointerDown={(e) => drag.start(e)} aria-label="Drag to reorder" className="grid h-9 w-6 shrink-0 cursor-grab touch-none place-items-center text-slate/40 active:cursor-grabbing">
+        <GripVertical size={16} />
       </button>
-      <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg">
-        <Photo id={photo.id} className="h-full w-full object-cover" />
-        {index === 0 && <span className="absolute left-1 top-1 rounded bg-amber px-1.5 text-[10px] font-bold text-forest-900">Cover</span>}
+      <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-sand">
+        <img src={ph.url} alt="" className="h-full w-full object-cover" />
+        {index === 0 && <span className="absolute left-1 top-1 rounded bg-amber px-1.5 text-[10px] font-bold text-forest">Cover</span>}
       </div>
-      <input
-        id={`caption-${photo.id}`}
-        value={photo.caption}
-        onChange={(e) => onCaption(e.target.value)}
-        placeholder="Caption for this photo (optional)"
-        className="min-w-0 flex-1 rounded-lg border border-transparent bg-cream/60 px-2.5 py-2 text-sm outline-none focus:border-forest-400 focus:bg-white"
-      />
+      <input value={ph.caption} onChange={(e) => onChange({ ...ph, caption: e.target.value })} placeholder="Caption (optional)" aria-label="Photo caption" className={`${inputClass} py-2`} />
       {index > 0 && (
-        <button type="button" onClick={onCover} className="hidden shrink-0 rounded-lg px-2 py-1.5 text-xs font-medium text-forest-500 hover:bg-forest/5 sm:block">
-          Make cover
+        <button type="button" onClick={onCover} title="Make cover photo" aria-label="Make cover photo" className="rounded-lg p-2 text-slate/40 hover:bg-amber/15 hover:text-amber-dark">
+          <Star size={16} />
         </button>
       )}
-      <button type="button" onClick={onRemove} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500" aria-label="Remove photo">
-        <Trash2 className="h-4 w-4" />
+      <button type="button" onClick={onRemove} aria-label="Remove photo" className="rounded-lg p-2 text-slate/40 hover:bg-red-50 hover:text-red-600">
+        <Trash2 size={16} />
       </button>
     </Reorder.Item>
   )
 }
 
-function PhotoManager({ photos, onChange, onUploaded }) {
-  const inputRef = useRef(null)
-  const [busy, setBusy] = useState(0)
+function PhotoManager({ photos, onChange }) {
+  const toast = useToast()
+  const fileRef = useRef(null)
+  const [pending, setPending] = useState(0)
   const [over, setOver] = useState(false)
-  const [error, setError] = useState('')
 
-  const addFiles = async (files) => {
-    const images = [...files].filter((f) => f.type.startsWith('image/'))
+  const upload = async (list) => {
+    const files = [...list].filter((f) => /^image\/(jpeg|png|webp)$/.test(f.type))
+    if (files.length < list.length) toast('Only JPG, PNG or WebP images can be uploaded', 'error')
     const room = MAX_PHOTOS - photos.length
-    setError(images.length > room ? `Up to ${MAX_PHOTOS} photos per product. ${images.length - Math.max(room, 0)} skipped.` : '')
-    const take = images.slice(0, Math.max(room, 0))
-    if (!take.length) return
-    setBusy(take.length)
-    const added = []
+    if (files.length > room) toast(`Up to ${MAX_PHOTOS} photos per soap. ${files.length - Math.max(room, 0)} skipped.`, 'error')
+    const take = files.slice(0, Math.max(room, 0))
+    setPending(take.length)
     for (const file of take) {
       try {
-        const id = await savePhoto(await resizeImage(file))
-        added.push({ id, caption: '' })
-      } catch {
-        setError(`Couldn't read ${file.name}. Use a JPG, PNG or WebP image.`)
+        const { url } = await api.upload(await shrink(file))
+        onChange((cur) => [...cur, { url, caption: '' }])
+      } catch (err) {
+        toast(`${file.name}: ${err.message}`, 'error')
       }
-      setBusy((n) => n - 1)
+      setPending((n) => n - 1)
     }
-    onUploaded(added.map((a) => a.id))
-    onChange((list) => [...list, ...added])
   }
 
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Photos</span>
-        <span className="text-xs text-slate-400">{photos.length} / {MAX_PHOTOS}</span>
+      <div className="mb-2 flex items-baseline justify-between">
+        <p className="text-sm font-medium text-forest">Photos</p>
+        <p className="text-xs text-slate/50">{photos.length} / {MAX_PHOTOS}</p>
       </div>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && inputRef.current?.click()}
-        onDragOver={(e) => {
-          e.preventDefault()
-          setOver(true)
-        }}
+      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={(e) => { upload(e.target.files); e.target.value = '' }} />
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setOver(true) }}
         onDragLeave={() => setOver(false)}
-        onDrop={(e) => {
-          e.preventDefault()
-          setOver(false)
-          addFiles(e.dataTransfer.files)
-        }}
-        className={cn(
-          'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-6 text-center transition',
-          over ? 'border-forest-400 bg-forest/5' : 'border-forest/15 bg-white hover:border-forest/30',
-        )}
+        onDrop={(e) => { e.preventDefault(); setOver(false); upload(e.dataTransfer.files) }}
+        disabled={photos.length >= MAX_PHOTOS}
+        className={`flex w-full flex-col items-center gap-1.5 rounded-2xl border-2 border-dashed px-4 py-6 text-center transition disabled:opacity-50 ${over ? 'border-forest bg-forest/5' : 'border-forest/20 bg-white hover:border-forest/40'}`}
       >
-        {busy > 0 ? <Loader2 className="h-7 w-7 animate-spin text-forest-400" /> : <ImagePlus className="h-7 w-7 text-forest-400" />}
-        <p className="text-sm font-medium text-forest">{busy > 0 ? `Processing ${busy} photo${busy > 1 ? 's' : ''}…` : 'Drop photos here or click to upload'}</p>
-        <p className="text-xs text-slate-400">Select several at once. Large images are resized automatically.</p>
-        <input
-          ref={inputRef}
-          id="product-photos"
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-          onChange={(e) => {
-            addFiles(e.target.files)
-            e.target.value = ''
-          }}
-        />
-      </div>
-      {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+        {pending > 0 ? <Loader2 className="animate-spin text-forest" /> : <ImagePlus className="text-forest" />}
+        <span className="text-sm font-semibold text-forest">{pending > 0 ? `Uploading ${pending} photo${pending > 1 ? 's' : ''}…` : 'Drop photos here or click to choose'}</span>
+        <span className="text-xs text-slate/50">Pick several at once. Large photos are resized automatically.</span>
+      </button>
       {photos.length > 0 && (
         <>
-          <p className="mb-2 mt-4 text-xs text-slate-400">Drag to set the order. The first photo is the cover shown on the product card.</p>
+          <p className="mb-2 mt-4 text-xs text-slate/50">Drag to reorder. The first photo is the cover on the website; captions show under each photo.</p>
           <Reorder.Group axis="y" values={photos} onReorder={(next) => onChange(() => next)} className="space-y-2">
             {photos.map((ph, i) => (
               <PhotoRow
-                key={ph.id}
-                photo={ph}
+                key={ph.url}
+                ph={ph}
                 index={i}
-                onCaption={(caption) => onChange((list) => list.map((x) => (x.id === ph.id ? { ...x, caption } : x)))}
-                onCover={() => onChange((list) => [ph, ...list.filter((x) => x.id !== ph.id)])}
-                onRemove={() => onChange((list) => list.filter((x) => x.id !== ph.id))}
+                onChange={(n) => onChange((cur) => cur.map((x) => (x.url === ph.url ? n : x)))}
+                onCover={() => onChange((cur) => [ph, ...cur.filter((x) => x.url !== ph.url)])}
+                onRemove={() => onChange((cur) => cur.filter((x) => x.url !== ph.url))}
               />
             ))}
           </Reorder.Group>
@@ -144,239 +131,317 @@ function PhotoManager({ photos, onChange, onUploaded }) {
   )
 }
 
-const BLANK = {
-  id: '', name: '', nepali: '', tagline: '', description: '', longDescription: '', ingredients: [], benefits: [], categories: [],
-  price: 350, stock: 50, weight: '100g', base: '#c9a26b', accent: '#6b4a24', active: true, featured: false, photos: [],
+function Visual({ p, className = '' }) {
+  const cover = p.photos?.[0]?.url ?? p.image
+  return cover ? (
+    <img src={cover} alt="" className={`aspect-[4/3] w-full rounded-xl object-cover ${className}`} />
+  ) : (
+    <SoapBox product={p} className={`w-full ${className}`} />
+  )
 }
 
-function ProductEditor({ product, onClose, onSave }) {
-  const [f, setF] = useState(() => ({ ...product, ingredientsText: product.ingredients.join(', '), benefitsText: product.benefits.join(', ') }))
-  const [photos, setPhotos] = useState(product.photos || [])
-  // Photos are stored as soon as they're uploaded; discard the new ones if the edit is cancelled.
-  const uploaded = useRef([])
-  const cancel = () => {
-    deletePhotos(uploaded.current)
-    onClose()
-  }
-  const [err, setErr] = useState('')
-  const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.type === 'number' ? Number(e.target.value) : e.target.value }))
-  const isNew = !product.id
+function ProductForm({ initial, onSaved, onClose }) {
+  const toast = useToast()
+  const [p, setP] = useState(() => ({
+    ...initial,
+    skinBenefits: initial.skinBenefits ?? [],
+    benefits: initial.benefits?.length ? initial.benefits : [''],
+    price: initial.price ?? '',
+    stock: initial.stock ?? '',
+    photos: initial.photos ?? (initial.image ? [{ url: initial.image, caption: '' }] : []),
+  }))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const setPhotos = (fn) => setP((x) => ({ ...x, photos: fn(x.photos) }))
+  const isNew = !initial.id
 
-  const save = (e) => {
-    e.preventDefault()
-    if (!f.name.trim()) return setErr('Name is required')
-    if (!f.categories.length) return setErr('Pick at least one category')
-    const split = (s) => s.split(',').map((x) => x.trim()).filter(Boolean)
-    const { ingredientsText, benefitsText, ...rest } = f
-    const removed = (product.photos || []).filter((ph) => !photos.some((x) => x.id === ph.id))
-    deletePhotos(removed.map((ph) => ph.id))
-    onSave({
-      ...rest,
-      photos,
-      id: rest.id || rest.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Date.now().toString(36).slice(-4),
-      ingredients: split(ingredientsText),
-      benefits: split(benefitsText),
-      stock: Math.max(0, Number(rest.stock) || 0),
-      price: Math.max(0, Number(rest.price) || 0),
+  const set = (k, v) => setP((x) => ({ ...x, [k]: v }))
+  const toggleIn = (k, v, max) =>
+    setP((x) => {
+      const has = x[k].includes(v)
+      if (!has && max && x[k].length >= max) return x
+      return { ...x, [k]: has ? x[k].filter((i) => i !== v) : [...x[k], v] }
     })
-  }
 
-  const input = 'w-full rounded-xl border border-forest/15 bg-cream/50 px-3 py-2.5 text-sm outline-none transition focus:border-forest-400 focus:bg-white focus:ring-4 focus:ring-forest/10'
-  const lbl = 'mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-400'
+  const save = async (e) => {
+    e?.preventDefault()
+    if (!p.name.trim()) return setError('Product name is required')
+    setSaving(true)
+    setError('')
+    const body = { ...p, benefits: p.benefits.filter((b) => b.trim()) }
+    try {
+      const saved = isNew ? await api.post('/products', body) : await api.put(`/products/${p.id}`, body)
+      toast(isNew ? 'Product added' : 'Product saved')
+      onSaved(saved, isNew)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
-    <motion.div className="fixed inset-0 z-[80] flex justify-end bg-forest-900/40 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={cancel}>
-      <motion.form
-        onSubmit={save}
-        onClick={(e) => e.stopPropagation()}
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        exit={{ x: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-        className="scrollbar-thin flex h-full w-full max-w-xl flex-col overflow-y-auto bg-cream"
-      >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-forest/10 bg-cream/90 px-6 py-4 backdrop-blur">
-          <h2 className="font-serif text-2xl text-forest">{isNew ? 'New product' : 'Edit product'}</h2>
-          <button type="button" onClick={cancel} className="grid h-9 w-9 place-items-center rounded-full hover:bg-forest/5" aria-label="Close">
-            <X className="h-5 w-5" />
-          </button>
+    <Drawer
+      open
+      onClose={onClose}
+      title={isNew ? 'Add product' : `Edit ${initial.name}`}
+      footer={
+        <>
+          {error && <p className="mr-auto self-center text-sm text-red-600">{error}</p>}
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button onClick={save} loading={saving}>{isNew ? 'Add product' : 'Save changes'}</Button>
+        </>
+      }
+    >
+      <form onSubmit={save} className="space-y-6">
+        {/* live preview */}
+        <div className="flex items-center gap-5 rounded-2xl border border-forest/10 p-4" style={{ background: `radial-gradient(circle at 30% 50%, ${p.bar.light}55, #fff 70%)` }}>
+          <motion.div key={p.photos[0]?.url || p.bar.base} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-52 shrink-0">
+            <Visual p={p} className="drop-shadow-lg" />
+          </motion.div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-dark">{p.local || 'Local name'}</p>
+            <p className="truncate font-serif text-xl text-forest">{p.name || 'Product name'}</p>
+            <p className="line-clamp-2 text-xs text-slate/60">{p.description || 'Short description shown on the card.'}</p>
+          </div>
         </div>
 
-        <div className="space-y-5 p-6">
-          <div className="flex items-center gap-5 rounded-2xl p-5" style={{ background: `linear-gradient(135deg, ${f.base}33, ${f.base}0d)` }}>
-            <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3, repeat: Infinity }} className="w-36 shrink-0">
-              <SoapBar base={f.base} accent={f.accent} className="w-full" />
-            </motion.div>
-            <div className="grid flex-1 grid-cols-2 gap-3">
-              <label>
-                <span className={lbl}>Bar color</span>
-                <input type="color" value={f.base} onChange={set('base')} className="h-10 w-full cursor-pointer rounded-lg border border-forest/15 bg-white" />
-              </label>
-              <label>
-                <span className={lbl}>Herb flecks</span>
-                <input type="color" value={f.accent} onChange={set('accent')} className="h-10 w-full cursor-pointer rounded-lg border border-forest/15 bg-white" />
-              </label>
-            </div>
+        <PhotoManager photos={p.photos} onChange={setPhotos} />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Name *" className="sm:col-span-2">
+            <input className={inputClass} value={p.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Neem Soap" />
+          </Field>
+          <Field label="Local / subtitle">
+            <input className={inputClass} value={p.local} onChange={(e) => set('local', e.target.value)} placeholder="e.g. Chandan" />
+          </Field>
+          <Field label="Tagline">
+            <input className={inputClass} value={p.tagline} onChange={(e) => set('tagline', e.target.value)} placeholder="e.g. The calming ritual bar" />
+          </Field>
+          <Field label="Description" className="sm:col-span-2">
+            <textarea rows={3} className={`${inputClass} resize-none`} value={p.description} onChange={(e) => set('description', e.target.value)} />
+          </Field>
+          <Field label="Price (NPR)" hint="Needed to sell through the cart">
+            <input type="number" min="0" className={inputClass} value={p.price} onChange={(e) => set('price', e.target.value)} />
+          </Field>
+          <Field label="Stock (bars)" hint="Leave empty if you don’t track stock">
+            <input type="number" min="0" step="1" className={inputClass} value={p.stock} onChange={(e) => set('stock', e.target.value)} />
+          </Field>
+          <Field label="Display order" hint="Lower numbers show first">
+            <input type="number" className={inputClass} value={p.order} onChange={(e) => set('order', e.target.value)} />
+          </Field>
+        </div>
+
+        <Field label="Key benefits">
+          <div className="space-y-2">
+            {p.benefits.map((b, i) => (
+              <div key={i} className="flex gap-2">
+                <input
+                  className={inputClass}
+                  value={b}
+                  onChange={(e) => set('benefits', p.benefits.map((x, j) => (j === i ? e.target.value : x)))}
+                  placeholder={`Benefit ${i + 1}`}
+                />
+                <button type="button" onClick={() => set('benefits', p.benefits.filter((_, j) => j !== i))} aria-label="Remove benefit" className="rounded-xl px-3 text-slate/40 hover:bg-red-50 hover:text-red-600">
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
+            {p.benefits.length < 8 && (
+              <button type="button" onClick={() => set('benefits', [...p.benefits, ''])} className="inline-flex items-center gap-1 text-sm font-semibold text-forest hover:underline">
+                <Plus size={14} /> Add benefit
+              </button>
+            )}
           </div>
+        </Field>
 
-          <PhotoManager photos={photos} onChange={setPhotos} onUploaded={(ids) => uploaded.current.push(...ids)} />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="sm:col-span-2"><span className={lbl}>Name</span><input className={input} value={f.name} onChange={set('name')} placeholder="e.g. Neem Soap" /></label>
-            <label><span className={lbl}>Nepali name</span><input className={input} value={f.nepali} onChange={set('nepali')} /></label>
-            <label><span className={lbl}>Tagline</span><input className={input} value={f.tagline} onChange={set('tagline')} /></label>
-            <label><span className={lbl}>Price (Rs.)</span><input type="number" min="0" className={input} value={f.price} onChange={set('price')} /></label>
-            <label><span className={lbl}>Stock (units)</span><input type="number" min="0" className={input} value={f.stock} onChange={set('stock')} /></label>
-            <label><span className={lbl}>Weight</span><input className={input} value={f.weight} onChange={set('weight')} /></label>
+        <div>
+          <p className="mb-2 text-sm font-medium text-forest">Filter categories</p>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => (
+              <Chip key={c} active={p.categories.includes(c)} onClick={() => toggleIn('categories', c)}>{c}</Chip>
+            ))}
           </div>
+        </div>
 
-          <label className="block"><span className={lbl}>Short description</span><textarea rows={2} className={input} value={f.description} onChange={set('description')} /></label>
-          <label className="block"><span className={lbl}>Full description</span><textarea rows={3} className={input} value={f.longDescription} onChange={set('longDescription')} /></label>
-          <label className="block"><span className={lbl}>Ingredients (comma separated)</span><input className={input} value={f.ingredientsText} onChange={set('ingredientsText')} /></label>
-          <label className="block"><span className={lbl}>Benefits (comma separated)</span><input className={input} value={f.benefitsText} onChange={set('benefitsText')} /></label>
+        <div>
+          <p className="mb-1 text-sm font-medium text-forest">Skin benefits</p>
+          <p className="mb-2 text-xs text-slate/50">Shown as labels pointing at the soap in “Benefits &amp; Shop”, and used by the “shop by benefit” filter. “Safe for all skin” is added automatically.</p>
+          <div className="flex flex-wrap gap-2">
+            {benefitChoices.map((b) => (
+              <Chip key={b} active={p.skinBenefits.includes(b)} onClick={() => toggleIn('skinBenefits', b)}>{b}</Chip>
+            ))}
+          </div>
+        </div>
 
+        <div>
+          <p className="mb-2 text-sm font-medium text-forest">Hero ingredients <span className="font-normal text-slate/50">(up to 2)</span></p>
+          <div className="flex flex-wrap gap-2">
+            {INGREDIENTS.map(([key, label]) => (
+              <Chip key={key} active={p.ingredients.includes(key)} onClick={() => toggleIn('ingredients', key, 2)}>
+                <span className="inline-flex items-center gap-1.5">
+                  <Ingredient name={key} className="h-4 w-4" />
+                  {label}
+                </span>
+              </Chip>
+            ))}
+          </div>
+        </div>
+
+        <div>
           <div>
-            <span className={lbl}>Categories</span>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((c) => {
-                const on = f.categories.includes(c)
-                return (
-                  <button
-                    type="button"
-                    key={c}
-                    onClick={() => setF((x) => ({ ...x, categories: on ? x.categories.filter((y) => y !== c) : [...x.categories, c] }))}
-                    className={cn('rounded-full border px-3.5 py-1.5 text-sm transition', on ? 'border-forest bg-forest text-cream' : 'border-forest/15 bg-white text-slate-500 hover:border-forest/40')}
-                  >
-                    {c}
-                  </button>
-                )
-              })}
+            <p className="mb-2 text-sm font-medium text-forest">Accent colour</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {SWATCHES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => set('bar', barFromBase(c))}
+                  aria-label={`Colour ${c}`}
+                  className={`h-8 w-8 rounded-full ring-2 ring-offset-2 transition ${p.bar.base === c ? 'ring-forest' : 'ring-transparent hover:ring-forest/30'}`}
+                  style={{ background: c }}
+                />
+              ))}
+              <label className="relative h-8 w-8 cursor-pointer overflow-hidden rounded-full border border-dashed border-forest/30" title="Custom colour">
+                <input type="color" value={p.bar.base} onChange={(e) => set('bar', barFromBase(e.target.value))} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                <Plus size={14} className="pointer-events-none absolute inset-0 m-auto text-forest/50" />
+              </label>
             </div>
+            <p className="mt-1.5 text-xs text-slate/50">Colours the watercolour wash and stripe on the box.</p>
           </div>
 
-          <div className="flex flex-wrap gap-6 rounded-2xl border border-forest/10 bg-white p-4">
-            <label className="flex items-center gap-3 text-sm text-slate-500"><Toggle on={f.active} onChange={(v) => setF((x) => ({ ...x, active: v }))} label="Visible on site" /> Visible on site</label>
-            <label className="flex items-center gap-3 text-sm text-slate-500"><Toggle on={f.featured} onChange={(v) => setF((x) => ({ ...x, featured: v }))} label="Bestseller badge" /> Bestseller badge</label>
-          </div>
-          {err && <p className="text-sm text-red-500">{err}</p>}
         </div>
 
-        <div className="sticky bottom-0 mt-auto flex justify-end gap-2 border-t border-forest/10 bg-cream/90 px-6 py-4 backdrop-blur">
-          <button type="button" onClick={cancel} className="rounded-full px-5 py-2.5 text-sm font-medium text-slate-500 hover:bg-forest/5">Cancel</button>
-          <button className="inline-flex items-center gap-2 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-cream hover:bg-forest-500">
-            <Save className="h-4 w-4" /> {isNew ? 'Create product' : 'Save changes'}
-          </button>
+        <div className="rounded-2xl bg-white p-4">
+          <Toggle checked={p.published} onChange={(v) => set('published', v)} label={p.published ? 'Live on website' : 'Hidden from website'} />
         </div>
-      </motion.form>
-    </motion.div>
+      </form>
+    </Drawer>
   )
 }
 
-export function Products({ query, toast }) {
-  const { products, saveProduct, deleteProduct } = useStore()
+export default function Products({ data, setData }) {
+  const toast = useToast()
+  const confirm = useConfirm()
   const [editing, setEditing] = useState(null)
-  const [del, setDel] = useState(null)
-  const [cat, setCat] = useState('All')
-  const list = products.filter(
-    (p) => (cat === 'All' || p.categories.includes(cat)) && `${p.name} ${p.ingredients.join(' ')}`.toLowerCase().includes(query.toLowerCase()),
-  )
+  const [query, setQuery] = useState('')
+  const [view, setView] = useState('all')
+
+  const products = data.products
+    .filter((p) => (view === 'all' ? true : view === 'live' ? p.published : !p.published))
+    .filter((p) => `${p.name} ${p.local} ${p.categories.join(' ')}`.toLowerCase().includes(query.toLowerCase()))
+
+  const replace = (saved) => setData((d) => ({ ...d, products: d.products.map((x) => (x.id === saved.id ? saved : x)) }))
+
+  const onSaved = (saved, isNew) => {
+    setData((d) => ({
+      ...d,
+      products: isNew ? [...d.products, saved] : d.products.map((x) => (x.id === saved.id ? saved : x)),
+    }))
+    setEditing(null)
+  }
+
+  const togglePublished = async (p) => {
+    try {
+      replace(await api.put(`/products/${p.id}`, { ...p, published: !p.published }))
+      toast(p.published ? `${p.name} hidden` : `${p.name} is live`)
+    } catch (err) {
+      toast(err.message, 'error')
+    }
+  }
+
+  const remove = async (p) => {
+    const ok = await confirm({ title: `Delete ${p.name}?`, message: 'This removes the product from the website permanently. Existing inquiries keep their record.' })
+    if (!ok) return
+    try {
+      await api.del(`/products/${p.id}`)
+      setData((d) => ({ ...d, products: d.products.filter((x) => x.id !== p.id) }))
+      toast('Product deleted')
+    } catch (err) {
+      toast(err.message, 'error')
+    }
+  }
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-1 overflow-x-auto rounded-full border border-forest/10 bg-white p-1">
-          {['All', ...CATEGORIES].map((c) => (
-            <button key={c} onClick={() => setCat(c)} className={cn('relative whitespace-nowrap rounded-full px-4 py-1.5 text-sm', cat === c ? 'text-cream' : 'text-slate-400 hover:text-forest')}>
-              {cat === c && <motion.span layoutId="admin-cat" className="absolute inset-0 rounded-full bg-forest" />}
-              <span className="relative">{c}</span>
-            </button>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-3xl text-forest">Products</h1>
+          <p className="mt-1 text-slate/60">{data.products.length} soaps · {data.products.filter((p) => p.published).length} live</p>
+        </div>
+        <Button icon={Plus} onClick={() => setEditing(blank())}>Add product</Button>
+      </div>
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate/40" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search products…" className={`${inputClass} pl-10`} />
+        </div>
+        <div className="flex gap-2">
+          {[['all', 'All'], ['live', 'Live'], ['hidden', 'Hidden']].map(([k, l]) => (
+            <Chip key={k} active={view === k} onClick={() => setView(k)}>{l}</Chip>
           ))}
         </div>
-        <button onClick={() => setEditing(BLANK)} className="inline-flex items-center gap-2 rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-forest-900 transition hover:bg-amber-300">
-          <Plus className="h-4 w-4" /> Add product
-        </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <AnimatePresence mode="popLayout">
-          {list.map((p) => (
-            <motion.div key={p.id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
-              <Card className={cn('group h-full transition hover:shadow-lg', !p.active && 'opacity-60')}>
-                <div className="flex gap-4">
-                  <div className="relative shrink-0">
-                    <ProductThumb product={p} className="h-20 w-24 transition group-hover:scale-105" />
-                    {p.photos?.length > 0 && (
-                      <span className="absolute -bottom-1.5 -right-1.5 inline-flex items-center gap-0.5 rounded-full bg-forest px-1.5 py-0.5 text-[10px] font-bold text-cream">
-                        <Images className="h-3 w-3" /> {p.photos.length}
-                      </span>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="truncate font-serif text-lg text-forest">{p.name}</h3>
-                      {p.featured && <Star className="h-4 w-4 shrink-0 fill-amber text-amber" />}
-                    </div>
-                    <p className="text-xs text-slate-400">{p.categories.join(' · ')}</p>
-                    <div className="mt-2 flex items-center gap-3 text-sm">
-                      <span className="font-semibold text-forest">Rs. {p.price}</span>
-                      <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold', p.stock === 0 ? 'bg-red-100 text-red-600' : p.stock < 15 ? 'bg-amber/20 text-amber-600' : 'bg-forest-100 text-forest-500')}>
-                        {p.stock} in stock
-                      </span>
-                    </div>
-                  </div>
+      {products.length ? (
+        <motion.ul layout className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {products.map((p) => (
+            <motion.li
+              layout
+              key={p.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`group flex flex-col rounded-2xl border bg-white p-4 transition hover:shadow-lg hover:shadow-forest/5 ${p.published ? 'border-forest/10' : 'border-dashed border-slate/30 opacity-75'}`}
+            >
+              <div className="relative rounded-xl p-4" style={{ background: `radial-gradient(circle, ${p.bar.light}66, #f3ece0)` }}>
+                <Visual p={p} />
+                {p.photos?.length > 1 && (
+                  <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-forest/80 px-2 py-0.5 text-[11px] font-semibold text-cream">
+                    <Images size={11} /> {p.photos.length}
+                  </span>
+                )}
+                <span className={`absolute left-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${p.published ? 'bg-emerald-100 text-emerald-800' : 'bg-slate/10 text-slate/70'}`}>
+                  {p.published ? <Eye size={11} /> : <EyeOff size={11} />}
+                  {p.published ? 'Live' : 'Hidden'}
+                </span>
+              </div>
+              <div className="mt-3 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-serif text-lg text-forest">{p.name}</h3>
+                  {p.price != null && <span className="shrink-0 text-sm font-semibold text-amber-dark">Rs. {p.price}</span>}
                 </div>
-                <div className="mt-4 flex items-center justify-between border-t border-forest/5 pt-3">
-                  <label className="flex items-center gap-2 text-xs text-slate-400">
-                    <Toggle
-                      on={p.active}
-                      label="Visible"
-                      onChange={(v) => {
-                        saveProduct({ ...p, active: v })
-                        toast(v ? `${p.name} is now visible` : `${p.name} hidden from site`)
-                      }}
-                    />
-                    {p.active ? 'Visible' : 'Hidden'}
-                  </label>
-                  <div className="flex gap-1">
-                    <button onClick={() => setEditing(p)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-forest/5 hover:text-forest" aria-label={`Edit ${p.name}`}>
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => setDel(p)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500" aria-label={`Delete ${p.name}`}>
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                <p className="line-clamp-2 text-xs text-slate/60">{p.description}</p>
+                {p.stock != null && (
+                  <p className={`mt-1.5 text-xs font-semibold ${p.stock === 0 ? 'text-red-600' : p.stock <= 10 ? 'text-amber-dark' : 'text-emerald-700'}`}>
+                    {p.stock === 0 ? 'Sold out' : `${p.stock} in stock`}
+                  </p>
+                )}
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {p.categories.map((c) => (
+                    <span key={c} className="rounded-full bg-forest/5 px-2 py-0.5 text-[10px] font-semibold text-forest/70">{c}</span>
+                  ))}
                 </div>
-              </Card>
-            </motion.div>
+              </div>
+              <div className="mt-4 flex items-center gap-1 border-t border-forest/5 pt-3">
+                <Button variant="ghost" icon={Pencil} onClick={() => setEditing(p)} className="flex-1">Edit</Button>
+                <Button variant="ghost" icon={p.published ? EyeOff : Eye} onClick={() => togglePublished(p)} className="flex-1">
+                  {p.published ? 'Hide' : 'Publish'}
+                </Button>
+                <button onClick={() => remove(p)} aria-label={`Delete ${p.name}`} className="rounded-xl p-2.5 text-slate/40 transition hover:bg-red-50 hover:text-red-600">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </motion.li>
           ))}
-        </AnimatePresence>
-      </div>
-      {!list.length && <p className="py-16 text-center text-slate-400">No products match.</p>}
+        </motion.ul>
+      ) : (
+        <div className="mt-6">
+          <EmptyState icon={Package} title="No products found">Try a different search, or add a new soap.</EmptyState>
+        </div>
+      )}
 
-      <AnimatePresence>
-        {editing && (
-          <ProductEditor
-            product={editing}
-            onClose={() => setEditing(null)}
-            onSave={(p) => {
-              saveProduct(p)
-              setEditing(null)
-              toast(editing.id ? 'Product updated' : 'Product created')
-            }}
-          />
-        )}
-      </AnimatePresence>
-      <Confirm
-        open={!!del}
-        title={`Delete ${del?.name}?`}
-        text="This removes the product from the store and website. This can't be undone."
-        onCancel={() => setDel(null)}
-        onConfirm={() => {
-          deleteProduct(del.id)
-          toast('Product deleted')
-          setDel(null)
-        }}
-      />
+      {editing && <ProductForm key={editing.id || 'new'} initial={editing} onSaved={onSaved} onClose={() => setEditing(null)} />}
     </div>
   )
 }

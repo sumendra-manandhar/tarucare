@@ -1,93 +1,70 @@
-import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Expand, ImageIcon, X } from 'lucide-react'
-import { usePhoto } from '../photos'
-import { cn } from './ui'
-
-export function Photo({ id, alt = '', className = '', ...rest }) {
-  const src = usePhoto(id)
-  if (!src) return <div className={cn('animate-pulse bg-forest/5', className)} aria-hidden="true" {...rest} />
-  return <img src={src} alt={alt} className={className} draggable={false} {...rest} />
-}
+import { ChevronLeft, ChevronRight, Expand, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 const slide = {
-  enter: (d) => ({ x: d > 0 ? '40%' : '-40%', opacity: 0 }),
+  enter: (d) => ({ x: d > 0 ? '30%' : '-30%', opacity: 0 }),
   center: { x: 0, opacity: 1 },
-  exit: (d) => ({ x: d > 0 ? '-40%' : '40%', opacity: 0 }),
+  exit: (d) => ({ x: d > 0 ? '-30%' : '30%', opacity: 0 }),
 }
 
-function useCarousel(count, start = 0) {
+function useSlides(count, start = 0) {
   const [[index, dir], set] = useState([start, 0])
-  const go = (d) => set(([i]) => [(i + d + count) % count, d])
-  const to = (i) => set(([cur]) => [i, i > cur ? 1 : -1])
-  useEffect(() => {
-    if (index >= count) set([0, 0])
-  }, [count, index])
-  return { index: Math.min(index, Math.max(count - 1, 0)), dir, go, to }
+  return {
+    index: Math.min(index, Math.max(count - 1, 0)),
+    dir,
+    step: (d) => set(([i]) => [(i + d + count) % count, d]),
+    to: (i) => set(([cur]) => [i, i > cur ? 1 : -1]),
+  }
 }
 
 function Lightbox({ photos, start, name, onClose }) {
-  const { index, dir, go } = useCarousel(photos.length, start)
+  const { index, dir, step } = useSlides(photos.length, start)
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') onClose()
-      if (e.key === 'ArrowRight') go(1)
-      if (e.key === 'ArrowLeft') go(-1)
+      if (e.key === 'ArrowRight') step(1)
+      if (e.key === 'ArrowLeft') step(-1)
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
   })
   const ph = photos[index]
   return (
-    <motion.div className="fixed inset-0 z-[90] flex flex-col bg-forest-900/95 backdrop-blur" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <div className="flex items-center justify-between p-4 text-cream">
-        <span className="text-sm text-cream/70">
-          {name} · {index + 1} / {photos.length}
-        </span>
-        <button onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-cream/10 hover:bg-cream/20" aria-label="Close photos">
-          <X className="h-5 w-5" />
-        </button>
+    <motion.div className="fixed inset-0 z-[80] flex flex-col bg-moss/95 text-cream backdrop-blur" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <div className="flex items-center justify-between px-5 py-4">
+        <p className="font-serif text-sm italic text-cream/70">{name} · {index + 1} / {photos.length}</p>
+        <button onClick={onClose} aria-label="Close photos" className="grid h-10 w-10 place-items-center rounded-full bg-cream/10 hover:bg-cream/20"><X size={20} /></button>
       </div>
       <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4">
         <AnimatePresence initial={false} custom={dir} mode="popLayout">
-          <motion.div key={ph.id} custom={dir} variants={slide} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35 }} className="flex h-full w-full items-center justify-center">
-            <Photo id={ph.id} alt={ph.caption || name} className="max-h-[75vh] max-w-full rounded-xl object-contain" />
-          </motion.div>
+          <motion.img key={ph.url} src={ph.url} alt={ph.caption || name} custom={dir} variants={slide} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35 }} className="max-h-[74vh] max-w-full rounded-2xl object-contain" />
         </AnimatePresence>
         {photos.length > 1 && (
           <>
-            <button onClick={() => go(-1)} className="absolute left-4 grid h-12 w-12 place-items-center rounded-full bg-cream/10 text-cream hover:bg-cream/20" aria-label="Previous photo">
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-            <button onClick={() => go(1)} className="absolute right-4 grid h-12 w-12 place-items-center rounded-full bg-cream/10 text-cream hover:bg-cream/20" aria-label="Next photo">
-              <ChevronRight className="h-6 w-6" />
-            </button>
+            <button onClick={() => step(-1)} aria-label="Previous photo" className="absolute left-4 grid h-12 w-12 place-items-center rounded-full border border-cream/25 hover:bg-cream hover:text-moss"><ChevronLeft size={22} /></button>
+            <button onClick={() => step(1)} aria-label="Next photo" className="absolute right-4 grid h-12 w-12 place-items-center rounded-full border border-cream/25 hover:bg-cream hover:text-moss"><ChevronRight size={22} /></button>
           </>
         )}
       </div>
-      <p className="min-h-[3.5rem] px-6 py-4 text-center font-serif text-lg italic text-cream/90">{ph?.caption}</p>
+      <p className="min-h-16 px-6 py-5 text-center font-serif text-lg italic text-cream/85">{ph.caption}</p>
     </motion.div>
   )
 }
 
-/** Swipeable photo story for a product: main image, caption, thumbnails and a full-screen view. */
-export function ProductGallery({ photos, name, className = '' }) {
-  const { index, dir, go, to } = useCarousel(photos.length)
+// A product's photo story: swipeable main image with captions, thumbnails and a full-screen view.
+export default function Gallery({ photos, name, tint = '#f3ece0', className = '' }) {
+  const { index, dir, step, to } = useSlides(photos.length)
   const [full, setFull] = useState(false)
-  if (!photos.length) {
-    return (
-      <div className={cn('grid place-items-center text-forest/30', className)}>
-        <ImageIcon className="h-10 w-10" />
-      </div>
-    )
-  }
   const ph = photos[index]
   return (
-    <div className={cn('flex flex-col', className)}>
-      <div className="group relative flex-1 overflow-hidden">
+    <div className={`flex flex-col ${className}`} style={{ background: tint }}>
+      <div className="group relative min-h-0 flex-1 overflow-hidden">
         <AnimatePresence initial={false} custom={dir} mode="popLayout">
-          <motion.div
-            key={ph.id}
+          <motion.img
+            key={ph.url}
+            src={ph.url}
+            alt={ph.caption || name}
             custom={dir}
             variants={slide}
             initial="enter"
@@ -96,52 +73,37 @@ export function ProductGallery({ photos, name, className = '' }) {
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             drag={photos.length > 1 ? 'x' : false}
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.4}
-            onDragEnd={(_, info) => {
-              if (info.offset.x < -60) go(1)
-              else if (info.offset.x > 60) go(-1)
-            }}
-            className="absolute inset-0 cursor-grab active:cursor-grabbing"
-          >
-            <Photo id={ph.id} alt={ph.caption || name} className="h-full w-full object-cover" />
-          </motion.div>
+            dragElastic={0.35}
+            onDragEnd={(_, info) => (info.offset.x < -60 ? step(1) : info.offset.x > 60 ? step(-1) : null)}
+            draggable={false}
+            className="absolute inset-0 h-full w-full cursor-grab object-cover active:cursor-grabbing"
+          />
         </AnimatePresence>
         {ph.caption && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-forest-900/80 to-transparent p-4 pt-12">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent p-5 pt-14">
             <AnimatePresence mode="wait">
-              <motion.p key={ph.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="font-serif text-base italic text-cream">
+              <motion.p key={ph.url} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="font-serif text-lg italic leading-snug text-cream">
                 {ph.caption}
               </motion.p>
             </AnimatePresence>
           </div>
         )}
-        <button onClick={() => setFull(true)} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/85 text-forest shadow transition hover:scale-105" aria-label="View full screen">
-          <Expand className="h-4 w-4" />
+        <button onClick={() => setFull(true)} aria-label="View photos full screen" className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-cream/85 text-moss shadow transition hover:bg-cream">
+          <Expand size={16} />
         </button>
         {photos.length > 1 && (
           <>
-            <button onClick={() => go(-1)} className="absolute left-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-forest opacity-0 shadow transition group-hover:opacity-100" aria-label="Previous photo">
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button onClick={() => go(1)} className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-forest opacity-0 shadow transition group-hover:opacity-100" aria-label="Next photo">
-              <ChevronRight className="h-5 w-5" />
-            </button>
-            <div className="absolute left-3 top-3 rounded-full bg-forest-900/60 px-2.5 py-1 text-[11px] font-semibold text-cream backdrop-blur">
-              {index + 1} / {photos.length}
-            </div>
+            <span className="absolute bottom-4 right-4 rounded-full bg-ink/55 px-2.5 py-1 font-serif text-xs italic text-cream backdrop-blur">{index + 1} / {photos.length}</span>
+            <button onClick={() => step(-1)} aria-label="Previous photo" className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-cream/85 text-moss opacity-0 shadow transition group-hover:opacity-100 focus-visible:opacity-100"><ChevronLeft size={20} /></button>
+            <button onClick={() => step(1)} aria-label="Next photo" className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-cream/85 text-moss opacity-0 shadow transition group-hover:opacity-100 focus-visible:opacity-100"><ChevronRight size={20} /></button>
           </>
         )}
       </div>
       {photos.length > 1 && (
-        <div className="scrollbar-thin flex gap-2 overflow-x-auto bg-white/60 p-2">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto p-3">
           {photos.map((p, i) => (
-            <button
-              key={p.id}
-              onClick={() => to(i)}
-              className={cn('relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-2 transition', i === index ? 'ring-amber' : 'opacity-60 ring-transparent hover:opacity-100')}
-              aria-label={`Show photo ${i + 1}`}
-            >
-              <Photo id={p.id} className="h-full w-full object-cover" />
+            <button key={p.url} onClick={() => to(i)} aria-label={`Show photo ${i + 1}`} aria-current={i === index} className={`h-14 w-14 shrink-0 overflow-hidden rounded-xl ring-2 ring-offset-2 ring-offset-cream/0 transition ${i === index ? 'ring-moss' : 'opacity-60 ring-transparent hover:opacity-100'}`}>
+              <img src={p.url} alt="" className="h-full w-full object-cover" />
             </button>
           ))}
         </div>

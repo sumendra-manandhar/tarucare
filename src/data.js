@@ -1,206 +1,237 @@
-export const CATEGORIES = ['Brightening', 'Deep Cleansing', 'Sensitive Skin']
-
-export const DEFAULT_PRODUCTS = [
-  {
-    id: 'turmeric',
-    name: 'Turmeric Soap',
-    nepali: 'बेसार',
-    tagline: 'Golden glow, naturally',
-    description: 'Brightens skin, reduces dark spots, and gives a natural glow.',
-    longDescription:
-      'Cold-processed with wild Himalayan turmeric and cold-pressed oils, this golden bar evens skin tone and fades dark spots while curcumin calms the skin.',
-    ingredients: ['Turmeric', 'Coconut Oil', 'Shea Butter', 'Saffron Notes'],
-    benefits: ['Brightens complexion', 'Reduces dark spots', 'Natural glow'],
-    categories: ['Brightening'],
-    price: 350,
-    stock: 120,
-    weight: '100g',
-    base: '#e9b949',
-    accent: '#b9770e',
-    active: true,
-    featured: true,
-  },
-  {
-    id: 'beetroot',
-    name: 'Beetroot Soap',
-    nepali: 'चुकन्दर',
-    tagline: 'Detox in rose-red',
-    description: 'Detoxifies skin, improves complexion, and brings natural radiance.',
-    longDescription:
-      'Beetroot extract is rich in antioxidants and vitamin C. Paired with almond oil, it draws out toxins and leaves a healthy rosy radiance.',
-    ingredients: ['Beetroot', 'Almond Oil', 'Rose Water', 'Glycerin'],
-    benefits: ['Detoxifies skin', 'Improves complexion', 'Natural radiance'],
-    categories: ['Brightening', 'Deep Cleansing'],
-    price: 350,
-    stock: 85,
-    weight: '100g',
-    base: '#a4244b',
-    accent: '#6b1030',
-    active: true,
-    featured: false,
-  },
-  {
-    id: 'sandalwood',
-    name: 'Sandalwood Soap',
-    nepali: 'चन्दन',
-    tagline: 'Calm, cool & fragrant',
-    description: 'Soothes skin, reduces tan, and leaves a calming fragrance.',
-    longDescription:
-      'A temple-time classic. Pure sandalwood powder and oil cool the skin, lift tan, and leave a woody, meditative fragrance that lingers.',
-    ingredients: ['Sandalwood', 'Olive Oil', 'Kesar', 'Vitamin E'],
-    benefits: ['Soothes skin', 'Reduces tan', 'Calming fragrance'],
-    categories: ['Brightening', 'Sensitive Skin'],
-    price: 450,
-    stock: 64,
-    weight: '100g',
-    base: '#d9b38c',
-    accent: '#8a5a32',
-    active: true,
-    featured: true,
-  },
-  {
-    id: 'titepati',
-    name: 'Titepati Soap',
-    nepali: 'तितेपाती',
-    tagline: 'The Himalayan purifier',
-    description: 'Deep cleanses, helps control acne, and refreshes skin.',
-    longDescription:
-      'Titepati (Himalayan mugwort) is a beloved Nepali healing herb. Its antibacterial leaves cleanse deep, keep breakouts at bay, and refresh tired skin.',
-    ingredients: ['Titepati (Mugwort)', 'Neem', 'Tea Tree', 'Coconut Oil'],
-    benefits: ['Deep cleanses', 'Controls acne', 'Refreshes skin'],
-    categories: ['Deep Cleansing'],
-    price: 380,
-    stock: 92,
-    weight: '100g',
-    base: '#5d8a4e',
-    accent: '#2f5228',
-    active: true,
-    featured: true,
-  },
-  {
-    id: 'honey',
-    name: 'Honey Soap',
-    nepali: 'मह',
-    tagline: 'Wild honey hydration',
-    description: 'Moisturizes deeply, keeps skin soft, healthy, and refreshed.',
-    longDescription:
-      'Made with raw wild honey from Nepal\'s hills. This natural humectant locks in moisture, so skin stays soft, supple and healthy.',
-    ingredients: ['Wild Honey', 'Beeswax', 'Oat Milk', 'Shea Butter'],
-    benefits: ['Deep moisture', 'Soft skin', 'Refreshing'],
-    categories: ['Sensitive Skin'],
-    price: 400,
-    stock: 23,
-    weight: '100g',
-    base: '#f0a830',
-    accent: '#b56b0b',
-    active: true,
-    featured: false,
-  },
-  {
-    id: 'goatmilk-tulsi',
-    name: 'Goat Milk with Tulsi Soap',
-    nepali: 'बाख्राको दूध र तुलसी',
-    tagline: 'Gentle as it gets',
-    description: 'Nourishes & moisturizes, soothes sensitive skin, and keeps it soft & smooth.',
-    longDescription:
-      'Creamy fresh goat milk meets holy basil (tulsi). Lactic acid gently renews skin while tulsi calms irritation, which makes it ideal for sensitive skin.',
-    ingredients: ['Goat Milk', 'Tulsi', 'Olive Oil', 'Shea Butter'],
-    benefits: ['Nourishes & moisturizes', 'Soothes sensitivity', 'Soft & smooth'],
-    categories: ['Sensitive Skin'],
-    price: 420,
-    stock: 70,
-    weight: '100g',
-    base: '#efe8d6',
-    accent: '#5f8d4e',
-    active: true,
-    featured: false,
-  },
-  {
-    id: 'charcoal',
-    name: 'Active Charcoal Soap',
-    nepali: 'सक्रिय कोइला',
-    tagline: 'Pore-deep detox',
-    description: 'Deep cleanses, removes impurities, excess oil, and unclogs pores.',
-    longDescription:
-      'Activated bamboo charcoal acts like a magnet for dirt, pollution and excess sebum, so pores are left clean and skin feels balanced and fresh.',
-    ingredients: ['Activated Charcoal', 'Tea Tree', 'Peppermint', 'Coconut Oil'],
-    benefits: ['Removes impurities', 'Controls oil', 'Unclogs pores'],
-    categories: ['Deep Cleansing'],
-    price: 400,
-    stock: 8,
-    weight: '100g',
-    base: '#2d2d2f',
-    accent: '#0e0e10',
-    active: true,
-    featured: false,
-  },
-]
-
-export const INGREDIENTS = [
-  { key: 'turmeric', name: 'Turmeric', latin: 'Curcuma longa', color: '#e9a23b', note: 'Curcumin-rich root that brightens and evens out tone.' },
-  { key: 'beetroot', name: 'Beetroot', latin: 'Beta vulgaris', color: '#a4244b', note: 'Antioxidant powerhouse that detoxifies and adds radiance.' },
-  { key: 'sandalwood', name: 'Sandalwood', latin: 'Santalum album', color: '#b07d4f', note: 'Cooling, calming heartwood that soothes and lifts tan.' },
-  { key: 'titepati', name: 'Titepati', latin: 'Artemisia vulgaris', color: '#5d8a4e', note: 'Himalayan mugwort, an antibacterial herb that fights acne.' },
-  { key: 'tulsi', name: 'Tulsi', latin: 'Ocimum sanctum', color: '#3f7d3a', note: 'Holy basil that purifies and calms irritated skin.' },
-  { key: 'honey', name: 'Honey', latin: 'Mel naturale', color: '#e39b16', note: 'Wild humectant that locks in deep, lasting moisture.' },
-]
-
-export const DEFAULT_SETTINGS = {
+export const contact = {
   phone: '+977 984-1234567',
+  phoneHref: 'tel:+9779841234567',
   email: 'tarucare.herbalsoap@gmail.com',
   website: 'www.tarucare.com.np',
-  facebook: 'tarucare',
-  instagram: 'tarucare',
-  announcement: 'Free delivery inside Kathmandu Valley on orders above Rs. 1,000 🌿',
+  facebook: 'https://facebook.com/tarucare',
+  instagram: 'https://instagram.com/tarucare',
+}
+
+// Online shop defaults (editable in Admin → Settings).
+export const shopDefaults = {
   cartEnabled: true,
   deliveryFee: 100,
   freeDeliveryOver: 1000,
   maxQtyPerItem: 10,
   paymentMethods: ['Cash on Delivery', 'eSewa', 'Khalti', 'Bank Transfer'],
+  deliveryNote: 'Kathmandu Valley in 1–2 days · rest of Nepal in 3–5 days',
 }
 
 export const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
 
-const day = 86400000
-const now = Date.now()
-export const DEFAULT_INQUIRIES = [
-  { id: 'i1', name: 'Aarati Shrestha', email: 'aarati@example.com', subject: 'Wholesale for my salon', message: 'Hi! I run a small beauty salon in Lalitpur and would love to stock the Sandalwood and Turmeric bars. Do you offer wholesale pricing?', date: now - 0.2 * day, status: 'new' },
-  { id: 'i2', name: 'Rohan Gurung', email: 'rohan.g@example.com', subject: 'Sensitive skin question', message: 'Is the Goat Milk Tulsi soap safe for my 4-year-old? She has very dry skin.', date: now - 1.1 * day, status: 'new' },
-  { id: 'i3', name: 'Sophie Laurent', email: 'sophie@example.com', subject: 'Export to France', message: 'We are a natural products boutique in Lyon interested in importing Himalayan herbal soaps. Please share your export catalogue.', date: now - 2.4 * day, status: 'replied' },
-  { id: 'i4', name: 'Bikash Thapa', email: 'bikash@example.com', subject: 'Charcoal soap restock', message: 'When will the Active Charcoal soap be back in stock in Pokhara stores?', date: now - 3.6 * day, status: 'read' },
-  { id: 'i5', name: 'Nisha KC', email: 'nisha.kc@example.com', subject: 'Gift boxes', message: 'Do you make gift sets for weddings? Need about 150 boxes.', date: now - 5.2 * day, status: 'replied' },
+export const filters = ['All', 'Brightening', 'Deep Cleansing', 'Sensitive Skin']
+
+// `bar` drives the soap illustration; `ingredients` keys map to <Ingredient />.
+export const products = [
+  {
+    id: 'turmeric',
+    price: 350,
+    stock: 60,
+    name: 'Turmeric Soap',
+    local: 'Besar',
+    tagline: 'The golden glow bar',
+    description: 'Brightens skin, reduces dark spots, and gives a natural glow.',
+    benefits: ['Brightens skin tone', 'Reduces dark spots', 'Natural, even glow'],
+    categories: ['Brightening'],
+    ingredients: ['turmeric', 'honey'],
+    bar: { base: '#e58a2c', light: '#f3a948', dark: '#b0611a', fleck: '#8a4512' },
+  },
+  {
+    id: 'beetroot',
+    price: 350,
+    stock: 45,
+    name: 'Beetroot Soap',
+    local: 'Chukandar',
+    tagline: 'The radiance detox bar',
+    description: 'Detoxifies skin, improves complexion, and brings natural radiance.',
+    benefits: ['Detoxifies skin', 'Improves complexion', 'Natural radiance'],
+    categories: ['Brightening', 'Deep Cleansing'],
+    ingredients: ['beetroot', 'tulsi'],
+    bar: { base: '#d9707f', light: '#ea95a0', dark: '#a8475a', fleck: '#7a2638' },
+  },
+  {
+    id: 'sandalwood',
+    price: 450,
+    stock: 30,
+    name: 'Sandalwood Soap',
+    local: 'Chandan',
+    tagline: 'The calming ritual bar',
+    description: 'Soothes skin, reduces tan, and leaves a calming fragrance.',
+    benefits: ['Soothes irritation', 'Reduces tan', 'Calming woody fragrance'],
+    categories: ['Brightening', 'Sensitive Skin'],
+    ingredients: ['sandalwood', 'honey'],
+    bar: { base: '#e3cfa6', light: '#f1e2c4', dark: '#b89d70', fleck: '#8a6c44' },
+  },
+  {
+    id: 'titepati',
+    price: 380,
+    stock: 50,
+    name: 'Titepati Soap',
+    local: 'Mugwort',
+    tagline: 'The Himalayan purifier',
+    description: 'Deep cleanses, helps control acne, and refreshes skin.',
+    benefits: ['Deep cleanses pores', 'Helps control acne', 'Refreshing herbal feel'],
+    categories: ['Deep Cleansing'],
+    ingredients: ['titepati', 'tulsi'],
+    bar: { base: '#8db35f', light: '#a9c97c', dark: '#5f8238', fleck: '#3e5a22' },
+  },
+  {
+    id: 'honey',
+    price: 400,
+    stock: 40,
+    name: 'Honey Soap',
+    local: 'Mah',
+    tagline: 'The deep-moisture bar',
+    description: 'Moisturizes deeply, keeps skin soft, healthy, and refreshed.',
+    benefits: ['Deep moisture', 'Soft, supple skin', 'Healthy & refreshed'],
+    categories: ['Sensitive Skin'],
+    ingredients: ['honey', 'milk'],
+    bar: { base: '#e39a35', light: '#f2b85a', dark: '#b06d18', fleck: '#7a4d08' },
+  },
+  {
+    id: 'goatmilk-tulsi',
+    price: 420,
+    stock: 35,
+    name: 'Goat Milk with Tulsi Soap',
+    local: 'Bakhra Dudh & Tulsi',
+    tagline: 'The gentle nourisher',
+    description: 'Nourishes & moisturizes, soothes sensitive skin, and keeps it soft & smooth.',
+    benefits: ['Nourishes & moisturizes', 'Soothes sensitive skin', 'Soft & smooth finish'],
+    categories: ['Sensitive Skin'],
+    ingredients: ['milk', 'tulsi'],
+    bar: { base: '#efe9dc', light: '#fbf8f1', dark: '#cfc4ab', fleck: '#b8ab8c' },
+  },
+  {
+    id: 'charcoal',
+    price: 400,
+    stock: 12,
+    name: 'Active Charcoal Soap',
+    local: 'Koila',
+    tagline: 'The pore detox bar',
+    description: 'Deep cleanses, removes impurities, excess oil, and unclogs pores.',
+    benefits: ['Removes impurities', 'Controls excess oil', 'Unclogs pores'],
+    categories: ['Deep Cleansing'],
+    ingredients: ['charcoal', 'titepati'],
+    bar: { base: '#35383b', light: '#585c61', dark: '#1a1b1d', fleck: '#8a8f94' },
+  },
 ]
 
-const item = (id, name, price, qty) => ({ id, name, price, qty })
-export const DEFAULT_ORDERS = [
+export const ingredients = [
   {
-    id: 'TC-1006', date: now - 0.1 * day, status: 'pending', payment: 'Cash on Delivery', notes: 'Please call before delivery.',
-    customer: { name: 'Prakriti Joshi', phone: '9841000006', email: 'prakriti@example.com', address: 'Jhamsikhel, Ward 3', city: 'Lalitpur' },
-    items: [item('turmeric', 'Turmeric Soap', 350, 2), item('honey', 'Honey Soap', 400, 1)], subtotal: 1100, delivery: 0, total: 1100,
+    key: 'turmeric',
+    props: ['Rich in curcumin', 'Brightens & evens tone', 'Ayurvedic staple'],
+    name: 'Turmeric',
+    sci: 'Curcuma longa',
+    note: 'A golden Ayurvedic staple rich in curcumin — prized for brightening and evening out skin tone.',
+    tint: '#f6c768',
   },
   {
-    id: 'TC-1005', date: now - 0.9 * day, status: 'confirmed', payment: 'eSewa', notes: '',
-    customer: { name: 'Suman Rai', phone: '9851000005', email: 'suman@example.com', address: 'Lakeside Rd', city: 'Pokhara' },
-    items: [item('charcoal', 'Active Charcoal Soap', 400, 1)], subtotal: 400, delivery: 100, total: 500,
+    key: 'beetroot',
+    props: ['Packed with antioxidants', 'Natural vitamin C', 'Revives dull skin'],
+    name: 'Beetroot',
+    sci: 'Beta vulgaris',
+    note: 'Packed with antioxidants and vitamin C to help detoxify and revive a dull complexion.',
+    tint: '#cf5c86',
   },
   {
-    id: 'TC-1004', date: now - 2.2 * day, status: 'shipped', payment: 'Khalti', notes: 'Gift wrap please',
-    customer: { name: 'Anjali Maharjan', phone: '9803000004', email: 'anjali@example.com', address: 'Kirtipur-5', city: 'Kathmandu' },
-    items: [item('sandalwood', 'Sandalwood Soap', 450, 2), item('goatmilk-tulsi', 'Goat Milk with Tulsi Soap', 420, 2)], subtotal: 1740, delivery: 0, total: 1740,
+    key: 'sandalwood',
+    props: ['Cooling heartwood', 'Soothes & calms', 'Natural fragrance'],
+    name: 'Sandalwood',
+    sci: 'Santalum album',
+    note: 'A cooling, fragrant heartwood used for centuries to soothe skin and calm the senses.',
+    tint: '#ecd2ae',
   },
   {
-    id: 'TC-1003', date: now - 3.5 * day, status: 'delivered', payment: 'Cash on Delivery', notes: '',
-    customer: { name: 'Kiran Tamang', phone: '9860000003', email: 'kiran@example.com', address: 'Boudha', city: 'Kathmandu' },
-    items: [item('titepati', 'Titepati Soap', 380, 3)], subtotal: 1140, delivery: 0, total: 1140,
+    key: 'titepati',
+    props: ['Wild Himalayan herb', 'Traditionally purifying', 'Clears & refreshes'],
+    name: 'Titepati',
+    sci: 'Artemisia vulgaris (Mugwort)',
+    note: 'A bitter Himalayan herb from Nepal’s hillsides, traditionally used to purify and clear skin.',
+    tint: '#97bf7f',
   },
   {
-    id: 'TC-1002', date: now - 5.1 * day, status: 'delivered', payment: 'Bank Transfer', notes: '',
-    customer: { name: 'Hari Adhikari', phone: '9841000002', email: 'hari@example.com', address: 'Traffic Chowk', city: 'Butwal' },
-    items: [item('beetroot', 'Beetroot Soap', 350, 1), item('turmeric', 'Turmeric Soap', 350, 1)], subtotal: 700, delivery: 100, total: 800,
+    key: 'tulsi',
+    props: ['Sacred holy basil', 'Naturally clarifying', 'Kind to sensitive skin'],
+    name: 'Tulsi',
+    sci: 'Ocimum sanctum (Holy Basil)',
+    note: 'The sacred “queen of herbs” — naturally clarifying and gentle enough for sensitive skin.',
+    tint: '#7fb48a',
   },
   {
-    id: 'TC-1001', date: now - 6.4 * day, status: 'cancelled', payment: 'Cash on Delivery', notes: 'Customer cancelled by phone',
-    customer: { name: 'Mira Gurung', phone: '9846000001', email: 'mira@example.com', address: 'Chipledhunga', city: 'Pokhara' },
-    items: [item('honey', 'Honey Soap', 400, 2)], subtotal: 800, delivery: 100, total: 900,
+    key: 'honey',
+    props: ['Natural humectant', 'Locks in moisture', 'Soft, supple skin'],
+    name: 'Honey',
+    sci: 'Raw wild honey',
+    note: 'A natural humectant that draws in moisture, leaving skin soft, supple and nourished.',
+    tint: '#f0bf55',
   },
 ]
+
+export const freeFrom = ['No Parabens', 'No Sulphates', 'No Silicones', 'Cruelty-Free']
+
+export const whyChoose = [
+  '100% Natural & Herbal Ingredients',
+  'Ayurvedic Formulation',
+  'Handcrafted with Love',
+  'Gentle on Skin, Tough on Impurities',
+  'Safe for All Skin Types',
+]
+
+// `products` lists the soaps whose own descriptions promise this benefit.
+export const skinBenefits = [
+  { title: 'Detoxifies Skin', icon: 'Sparkles', text: 'Draws out everyday grime and pollutants so skin can breathe and renew.', products: ['beetroot', 'charcoal'] },
+  { title: 'Deep Cleanses', icon: 'Droplets', text: 'Lifts dirt and excess oil from deep in the pores without stripping skin.', products: ['titepati', 'charcoal'] },
+  { title: 'Moisturizes Deeply', icon: 'Droplet', text: 'Natural humectants lock in moisture for skin that stays soft all day.', products: ['honey', 'goatmilk-tulsi'] },
+  { title: 'Brightens Complexion', icon: 'Sun', text: 'Evens out tone and reveals a natural, healthy glow.', products: ['turmeric', 'beetroot', 'sandalwood'] },
+  { title: 'Reduces Blemishes', icon: 'Wand2', text: 'Helps fade dark spots and calm breakouts over time.', products: ['turmeric', 'titepati'] },
+  { title: 'Soothes & Nourishes', icon: 'Flower2', text: 'Calms irritation and redness while feeding skin what it needs.', products: ['sandalwood', 'goatmilk-tulsi'] },
+  { title: 'Balances Oil', icon: 'Scale', text: 'Controls shine and keeps oily skin fresh without over-drying.', products: ['charcoal', 'titepati'] },
+  { title: 'Gentle & Safe for All Skin Types', icon: 'ShieldCheck', text: 'Free from harsh chemicals — every bar is kind enough for daily use.', products: [] },
+]
+
+export const quality = [
+  { title: 'Premium Ingredients', text: 'Herbs and oils hand-selected from trusted Nepali growers.', icon: 'Leaf' },
+  { title: 'Small-Batch Handcrafted', text: 'Cold-crafted in small batches to keep every herb potent.', icon: 'HandHeart' },
+  { title: 'Rigorous Quality Control', text: 'Every batch checked for purity, pH balance and consistency.', icon: 'ClipboardCheck' },
+  { title: 'Sustainable Packaging', text: 'Recyclable, plastic-light packaging that respects the earth.', icon: 'Recycle' },
+  { title: 'Export Quality Standards', text: 'Made in Nepal to standards ready for the world.', icon: 'Globe2' },
+]
+
+export const ingredientLabels = {
+  turmeric: 'Turmeric', beetroot: 'Beetroot', sandalwood: 'Sandalwood', titepati: 'Titepati',
+  tulsi: 'Tulsi', honey: 'Honey', milk: 'Goat Milk', charcoal: 'Charcoal',
+}
+
+export const storyTabs = [
+  {
+    key: 'story',
+    label: 'Our Story',
+    title: 'Nepal’s natural heritage, Ayurveda’s timeless wisdom.',
+    text: 'TARU CARE is a premium herbal soap brand inspired by Nepal’s natural heritage and the timeless wisdom of Ayurveda. We craft handcrafted soaps using the finest herbs, natural oils and traditional techniques to bring you the goodness of nature for healthy, radiant and glowing skin.',
+  },
+  {
+    key: 'mission',
+    label: 'Mission',
+    title: 'Natural, safe and effective — for everyone.',
+    text: 'To provide natural, safe and effective herbal soaps that enhance wellness and promote a sustainable lifestyle.',
+  },
+  {
+    key: 'vision',
+    label: 'Vision',
+    title: 'From the Himalayas to the world.',
+    text: 'To be a globally recognized herbal soap brand known for purity, quality and care for nature.',
+  },
+]
+
+// Benefits an admin can tick per product. "Gentle & Safe…" applies to every bar, so it's not a choice.
+export const SAFE_BENEFIT = 'Gentle & Safe for All Skin Types'
+export const benefitChoices = skinBenefits.filter((b) => b.title !== SAFE_BENEFIT).map((b) => b.title)
+
+// Older/seed products don't store their skin benefits yet: derive them from the mapping above.
+export function withSkinBenefits(p) {
+  if (Array.isArray(p.skinBenefits)) return p
+  return { ...p, skinBenefits: skinBenefits.filter((b) => b.products.includes(p.id)).map((b) => b.title) }
+}
+
+// Which soap each themed hero slide shows (editable in Admin → Settings).
+export const defaultHeroSlides = { Brightening: 'turmeric', 'Deep Cleansing': 'charcoal', 'Sensitive Skin': 'goatmilk-tulsi' }
