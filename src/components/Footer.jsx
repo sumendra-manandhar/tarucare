@@ -1,4 +1,4 @@
-import { ArrowUp } from 'lucide-react'
+import { ArrowUp, Lock } from 'lucide-react'
 import { useSiteData } from '../SiteData'
 import { Mountains } from './Illustrations'
 
@@ -51,9 +51,17 @@ export default function Footer() {
       <div className="relative border-t border-cream/10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 text-xs text-cream/50 sm:flex-row sm:px-6">
           <p>© {new Date().getFullYear()} TARU CARE · Herbal Soap. All rights reserved.</p>
-          <a href="#top" className="inline-flex items-center gap-1.5 hover:text-cream">
-            Back to top <ArrowUp size={14} />
-          </a>
+          <div className="flex items-center gap-5">
+            {/* Static previews (VITE_DEMO) have no server, so there's no admin to link to. */}
+            {!import.meta.env.VITE_DEMO && (
+              <a href="/admin" className="inline-flex items-center gap-1.5 hover:text-cream">
+                <Lock size={13} /> Admin
+              </a>
+            )}
+            <a href="#top" className="inline-flex items-center gap-1.5 hover:text-cream">
+              Back to top <ArrowUp size={14} />
+            </a>
+          </div>
         </div>
       </div>
     </footer>
