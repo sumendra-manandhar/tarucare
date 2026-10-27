@@ -52,12 +52,10 @@ export default function Footer() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 text-xs text-cream/50 sm:flex-row sm:px-6">
           <p>© {new Date().getFullYear()} TARU CARE · Herbal Soap. All rights reserved.</p>
           <div className="flex items-center gap-5">
-            {/* Static previews (VITE_DEMO) have no server, so there's no admin to link to. */}
-            {!import.meta.env.VITE_DEMO && (
-              <a href="/admin" className="inline-flex items-center gap-1.5 hover:text-cream">
-                <Lock size={13} /> Admin
-              </a>
-            )}
+            {/* Static previews (VITE_DEMO) open the in-browser admin at #admin. */}
+            <a href={import.meta.env.VITE_DEMO ? '#admin' : '/admin'} className="inline-flex items-center gap-1.5 hover:text-cream">
+              <Lock size={13} /> Admin
+            </a>
             <a href="#top" className="inline-flex items-center gap-1.5 hover:text-cream">
               Back to top <ArrowUp size={14} />
             </a>

@@ -1,3 +1,5 @@
+import { demoApi } from './demoApi'
+
 async function request(path, { method = 'GET', body, form } = {}) {
   const res = await fetch(`/api${path}`, {
     method,
@@ -14,7 +16,9 @@ async function request(path, { method = 'GET', body, form } = {}) {
   return data
 }
 
-export const api = {
+export const DEMO = !!import.meta.env.VITE_DEMO
+
+const serverApi = {
   get: (p) => request(p),
   post: (p, body) => request(p, { method: 'POST', body }),
   put: (p, body) => request(p, { method: 'PUT', body }),
@@ -26,3 +30,6 @@ export const api = {
     return request('/uploads', { method: 'POST', form })
   },
 }
+
+// Static previews have no server, so they run against an in-browser copy of the API.
+export const api = DEMO ? demoApi : serverApi

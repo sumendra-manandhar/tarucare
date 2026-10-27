@@ -201,11 +201,7 @@ export function CartDrawer() {
     setBusy(true)
     setFailure('')
     try {
-      const body = { customer: form, payment: pay, notes, items: items.map((l) => ({ id: l.id, qty: l.qty })) }
-      // VITE_DEMO builds (static previews with no server) show the confirmation without saving anything.
-      const order = import.meta.env.VITE_DEMO
-        ? { id: 'TC-DEMO', total, payment: pay, items: items.map((l) => ({ id: l.id, name: l.product.name, price: l.product.price, qty: l.qty })) }
-        : await api.post('/orders', body)
+      const order = await api.post('/orders', { customer: form, payment: pay, notes, items: items.map((l) => ({ id: l.id, qty: l.qty })) })
       saveCustomer(form)
       setPlaced({ ...order, name: form.name.split(' ')[0], phone: form.phone })
       setNotes('')

@@ -2,7 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ExternalLink, Inbox, LayoutDashboard, Loader2, Lock, LogOut, Menu, Package, Settings as SettingsIcon, ShoppingCart, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Logo } from '../components/Illustrations'
-import { api } from '../lib/api'
+import { api, DEMO } from '../lib/api'
+import { DEMO_PASSWORD } from '../lib/demoApi'
 import Dashboard from './Dashboard'
 import Inquiries from './Inquiries'
 import Orders from './Orders'
@@ -18,8 +19,11 @@ const pages = {
   settings: { label: 'Settings', icon: SettingsIcon, component: Settings },
 }
 
+// Static previews keep the admin under #admin, so pages there are #admin-orders etc.
+const SITE_URL = DEMO ? '#top' : '/'
+const hashFor = (key) => (DEMO ? (key === 'dashboard' ? '#admin' : `#admin-${key}`) : `/${key}`)
 const pageFromHash = () => {
-  const key = window.location.hash.replace('#/', '')
+  const key = window.location.hash.replace(DEMO ? /^#admin-?/ : '#/', '')
   return pages[key] ? key : 'dashboard'
 }
 
@@ -61,7 +65,12 @@ function Login({ onSuccess }) {
         </label>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         <Button type="submit" loading={loading} className="mt-6 w-full py-3">Sign in</Button>
-        <a href="/" className="mt-4 block text-center text-xs text-slate/50 hover:text-forest">← Back to website</a>
+        {DEMO && (
+          <p className="mt-4 rounded-xl bg-sand px-3 py-2 text-center text-xs text-slate/70">
+            Demo password: <span className="font-mono font-semibold text-forest">{DEMO_PASSWORD}</span>
+          </p>
+        )}
+        <a href={SITE_URL} className="mt-4 block text-center text-xs text-slate/50 hover:text-forest">← Back to website</a>
       </motion.form>
     </div>
   )
@@ -94,7 +103,7 @@ function Shell({ onLogout }) {
   }, [])
 
   const go = (key) => {
-    window.location.hash = `/${key}`
+    window.location.hash = hashFor(key)
     setNavOpen(false)
   }
 
@@ -134,7 +143,7 @@ function Shell({ onLogout }) {
         ))}
       </ul>
       <div className="space-y-1 border-t border-cream/10 p-3">
-        <a href="/" target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream/75 hover:bg-cream/5 hover:text-cream">
+        <a href={SITE_URL} {...(DEMO ? {} : { target: '_blank', rel: 'noreferrer' })} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream/75 hover:bg-cream/5 hover:text-cream">
           <ExternalLink size={18} /> View website
         </a>
         <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-cream/75 hover:bg-cream/5 hover:text-cream">

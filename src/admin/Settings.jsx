@@ -1,6 +1,6 @@
 import { Plus, Save, X } from 'lucide-react'
 import { useState } from 'react'
-import { api } from '../lib/api'
+import { api, DEMO } from '../lib/api'
 import { defaultHeroSlides } from '../data'
 import { Button, Field, inputClass, Toggle, useToast } from './ui'
 
@@ -154,9 +154,15 @@ export default function Settings({ data, setData }) {
 
       <section className="mt-6 rounded-2xl border border-forest/10 bg-white p-6">
         <h2 className="font-serif text-xl text-forest">Admin password</h2>
+        {DEMO ? (
+          <p className="mt-1 text-sm text-slate/60">
+            This is a browser-only demo: changes are saved in this browser and nobody else sees them. On the live site, the password is set in the server’s <code className="rounded bg-sand px-1.5 py-0.5 text-xs">.env</code> file.
+          </p>
+        ) : (
         <p className="mt-1 text-sm text-slate/60">
           The password is set by <code className="rounded bg-sand px-1.5 py-0.5 text-xs">ADMIN_PASSWORD</code> in the server’s <code className="rounded bg-sand px-1.5 py-0.5 text-xs">.env</code> file. Change it there and restart the server.
         </p>
+        )}
       </section>
     </form>
   )

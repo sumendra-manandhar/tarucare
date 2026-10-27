@@ -24,6 +24,6 @@ npm run build
 npm start              # serves the built site + API on PORT (default 3001)
 ```
 
-A static preview without the API can be built with `VITE_DEMO=1 npm run build`: the cart works and checkout shows a sample confirmation without saving an order.
+A static preview without the server can be built with `VITE_DEMO=1 npm run build`. It runs an in-browser copy of the API (`src/lib/demoApi.js`) that keeps everything in the visitor's localStorage: the cart and checkout work, and the admin opens from the footer at `#admin` (demo password `taru@123`). Production builds never include it.
 
 Data lives in `server/db.json` and uploaded photos in `server/uploads/` — both are git-ignored, so back them up separately.
