@@ -5,6 +5,7 @@ import { Collection } from './Collection'
 import { Ingredients } from './Ingredients'
 import { Benefits } from './Benefits'
 import { Contact, Footer } from './Contact'
+import { CartDrawer, CartToast } from './Cart'
 
 export default function Site() {
   const { scrollYProgress } = useScroll()
@@ -22,6 +23,8 @@ export default function Site() {
         <Contact />
       </main>
       <Footer />
+      <CartDrawer />
+      <CartToast />
     </div>
   )
 }

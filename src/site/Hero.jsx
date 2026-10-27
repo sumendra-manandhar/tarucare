@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, Droplets, HandHeart, Leaf, Menu, Recycle, Sparkle
 import { Ingredient, Logo, SoapBar } from '../components/Art'
 import { Aurora, BlurText, Eyebrow, GhostButton, GridPattern, Marquee, ShimmerButton } from '../components/ui'
 import { useStore } from '../store'
+import { CartButton } from './Cart'
 
 const NAV = [
   { href: '#about', label: 'Our Story' },
@@ -65,6 +66,7 @@ export function Navbar() {
             ))}
           </ul>
           <div className="flex items-center gap-2">
+            <CartButton />
             <a href="#collection" className="hidden rounded-full bg-amber px-5 py-2 text-sm font-semibold text-forest-800 transition hover:bg-amber-300 sm:inline-flex">
               Shop Soaps
             </a>

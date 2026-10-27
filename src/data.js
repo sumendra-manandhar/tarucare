@@ -152,7 +152,14 @@ export const DEFAULT_SETTINGS = {
   facebook: 'tarucare',
   instagram: 'tarucare',
   announcement: 'Free delivery inside Kathmandu Valley on orders above Rs. 1,000 🌿',
+  cartEnabled: true,
+  deliveryFee: 100,
+  freeDeliveryOver: 1000,
+  maxQtyPerItem: 10,
+  paymentMethods: ['Cash on Delivery', 'eSewa', 'Khalti', 'Bank Transfer'],
 }
+
+export const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
 
 const day = 86400000
 const now = Date.now()
@@ -162,4 +169,38 @@ export const DEFAULT_INQUIRIES = [
   { id: 'i3', name: 'Sophie Laurent', email: 'sophie@example.com', subject: 'Export to France', message: 'We are a natural products boutique in Lyon interested in importing Himalayan herbal soaps. Please share your export catalogue.', date: now - 2.4 * day, status: 'replied' },
   { id: 'i4', name: 'Bikash Thapa', email: 'bikash@example.com', subject: 'Charcoal soap restock', message: 'When will the Active Charcoal soap be back in stock in Pokhara stores?', date: now - 3.6 * day, status: 'read' },
   { id: 'i5', name: 'Nisha KC', email: 'nisha.kc@example.com', subject: 'Gift boxes', message: 'Do you make gift sets for weddings? Need about 150 boxes.', date: now - 5.2 * day, status: 'replied' },
+]
+
+const item = (id, name, price, qty) => ({ id, name, price, qty })
+export const DEFAULT_ORDERS = [
+  {
+    id: 'TC-1006', date: now - 0.1 * day, status: 'pending', payment: 'Cash on Delivery', notes: 'Please call before delivery.',
+    customer: { name: 'Prakriti Joshi', phone: '9841000006', email: 'prakriti@example.com', address: 'Jhamsikhel, Ward 3', city: 'Lalitpur' },
+    items: [item('turmeric', 'Turmeric Soap', 350, 2), item('honey', 'Honey Soap', 400, 1)], subtotal: 1100, delivery: 0, total: 1100,
+  },
+  {
+    id: 'TC-1005', date: now - 0.9 * day, status: 'confirmed', payment: 'eSewa', notes: '',
+    customer: { name: 'Suman Rai', phone: '9851000005', email: 'suman@example.com', address: 'Lakeside Rd', city: 'Pokhara' },
+    items: [item('charcoal', 'Active Charcoal Soap', 400, 1)], subtotal: 400, delivery: 100, total: 500,
+  },
+  {
+    id: 'TC-1004', date: now - 2.2 * day, status: 'shipped', payment: 'Khalti', notes: 'Gift wrap please',
+    customer: { name: 'Anjali Maharjan', phone: '9803000004', email: 'anjali@example.com', address: 'Kirtipur-5', city: 'Kathmandu' },
+    items: [item('sandalwood', 'Sandalwood Soap', 450, 2), item('goatmilk-tulsi', 'Goat Milk with Tulsi Soap', 420, 2)], subtotal: 1740, delivery: 0, total: 1740,
+  },
+  {
+    id: 'TC-1003', date: now - 3.5 * day, status: 'delivered', payment: 'Cash on Delivery', notes: '',
+    customer: { name: 'Kiran Tamang', phone: '9860000003', email: 'kiran@example.com', address: 'Boudha', city: 'Kathmandu' },
+    items: [item('titepati', 'Titepati Soap', 380, 3)], subtotal: 1140, delivery: 0, total: 1140,
+  },
+  {
+    id: 'TC-1002', date: now - 5.1 * day, status: 'delivered', payment: 'Bank Transfer', notes: '',
+    customer: { name: 'Hari Adhikari', phone: '9841000002', email: 'hari@example.com', address: 'Traffic Chowk', city: 'Butwal' },
+    items: [item('beetroot', 'Beetroot Soap', 350, 1), item('turmeric', 'Turmeric Soap', 350, 1)], subtotal: 700, delivery: 100, total: 800,
+  },
+  {
+    id: 'TC-1001', date: now - 6.4 * day, status: 'cancelled', payment: 'Cash on Delivery', notes: 'Customer cancelled by phone',
+    customer: { name: 'Mira Gurung', phone: '9846000001', email: 'mira@example.com', address: 'Chipledhunga', city: 'Pokhara' },
+    items: [item('honey', 'Honey Soap', 400, 2)], subtotal: 800, delivery: 100, total: 900,
+  },
 ]

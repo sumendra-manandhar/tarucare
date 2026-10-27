@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowUpRight, Check, Leaf, Minus, Plus, Sparkles, X } from 'lucide-react'
+import { ArrowUpRight, Check, Images, Leaf, Minus, Plus, ShoppingBag, Sparkles, X } from 'lucide-react'
 import { Ingredient, SoapBar, productIngredient } from '../components/Art'
 import { Reveal, SectionHeading, SpotlightCard, Tilt } from '../components/ui'
+import { Photo, ProductGallery } from '../components/Gallery'
+import { useAddToCart } from './Cart'
 import { CATEGORIES } from '../data'
 import { useStore } from '../store'
 
@@ -13,7 +15,38 @@ export function inquireAbout(subject) {
   document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' })
 }
 
+function CardMedia({ p }) {
+  const [a, b] = p.photos || []
+  if (a) {
+    return (
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-forest/5">
+        <Photo id={a.id} alt={a.caption || p.name} className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+        {b && <Photo id={b.id} alt={b.caption || p.name} className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-700 group-hover:scale-105 group-hover:opacity-100" />}
+        {p.photos.length > 1 && (
+          <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full bg-forest-900/60 px-2.5 py-1 text-[11px] font-semibold text-cream backdrop-blur">
+            <Images className="h-3 w-3" /> {p.photos.length} photos
+          </span>
+        )}
+      </div>
+    )
+  }
+  return (
+    <div className="relative overflow-hidden rounded-2xl p-6" style={{ background: `linear-gradient(145deg, ${p.base}22, ${p.base}0a)` }}>
+      <div className="absolute -bottom-4 -left-4 h-24 w-24 opacity-30 transition-all duration-500 group-hover:-rotate-12 group-hover:opacity-90">
+        <Ingredient name={productIngredient[p.id] || 'leaf'} className="h-full w-full text-forest-400" />
+      </div>
+      <Tilt className="relative mx-auto w-[85%]">
+        <motion.div className="transition-transform duration-500 group-hover:-translate-y-2 group-hover:scale-105">
+          <SoapBar base={p.base} accent={p.accent} className="w-full" />
+        </motion.div>
+      </Tilt>
+    </div>
+  )
+}
+
 function ProductCard({ p, onOpen }) {
+  const { settings } = useStore()
+  const add = useAddToCart()
   const low = p.stock > 0 && p.stock < 15
   return (
     <SpotlightCard
@@ -21,20 +54,13 @@ function ProductCard({ p, onOpen }) {
       className="flex h-full cursor-pointer flex-col rounded-3xl border border-forest/10 bg-white p-5 transition-shadow duration-500 hover:shadow-2xl hover:shadow-forest/10"
       onClick={() => onOpen(p)}
     >
-      <div className="relative overflow-hidden rounded-2xl p-6" style={{ background: `linear-gradient(145deg, ${p.base}22, ${p.base}0a)` }}>
-        <div className="absolute right-3 top-3 flex gap-1.5">
+      <div className="relative">
+        <CardMedia p={p} />
+        <div className="absolute right-3 top-3 z-10 flex gap-1.5">
           {p.featured && <span className="rounded-full bg-forest px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber">Bestseller</span>}
           {low && <span className="rounded-full bg-amber px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-forest-800">Only {p.stock} left</span>}
           {p.stock === 0 && <span className="rounded-full bg-slate px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-cream">Sold out</span>}
         </div>
-        <div className="absolute -bottom-4 -left-4 h-24 w-24 opacity-30 transition-all duration-500 group-hover:-rotate-12 group-hover:opacity-90">
-          <Ingredient name={productIngredient[p.id] || 'leaf'} className="h-full w-full text-forest-400" />
-        </div>
-        <Tilt className="relative mx-auto w-[85%]">
-          <motion.div className="transition-transform duration-500 group-hover:-translate-y-2 group-hover:scale-105">
-            <SoapBar base={p.base} accent={p.accent} className="w-full" />
-          </motion.div>
-        </Tilt>
       </div>
       <div className="flex flex-1 flex-col px-1 pt-5">
         <div className="flex items-start justify-between gap-3">
@@ -50,11 +76,26 @@ function ProductCard({ p, onOpen }) {
             <span key={c} className="rounded-full bg-forest/5 px-2.5 py-1 text-[11px] font-medium text-forest-500">{c}</span>
           ))}
         </div>
-        <div className="mt-5 flex items-center justify-between border-t border-forest/10 pt-4 text-sm font-semibold text-forest">
-          View details
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-forest/5 transition-all duration-300 group-hover:rotate-45 group-hover:bg-forest group-hover:text-amber">
-            <ArrowUpRight className="h-4 w-4" />
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-forest/10 pt-4 text-sm font-semibold text-forest">
+          <span className="inline-flex items-center gap-2">
+            View details
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-forest/5 transition-all duration-300 group-hover:rotate-45 group-hover:bg-forest group-hover:text-amber">
+              <ArrowUpRight className="h-4 w-4" />
+            </span>
           </span>
+          {settings.cartEnabled && (
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              disabled={p.stock === 0}
+              onClick={(e) => {
+                e.stopPropagation()
+                add(p.id)
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-forest px-4 py-2 text-xs font-semibold text-cream transition hover:bg-forest-500 disabled:cursor-not-allowed disabled:bg-slate-400/40"
+            >
+              <ShoppingBag className="h-3.5 w-3.5" /> {p.stock === 0 ? 'Sold out' : 'Add to cart'}
+            </motion.button>
+          )}
         </div>
       </div>
     </SpotlightCard>
@@ -87,7 +128,10 @@ function TeaserCard() {
 }
 
 function ProductModal({ p, onClose }) {
+  const { settings, setCartOpen, maxFor } = useStore()
+  const add = useAddToCart()
   const [qty, setQty] = useState(1)
+  const maxQty = Math.max(1, maxFor(p.id))
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose()
     document.body.style.overflow = 'hidden'
@@ -114,18 +158,22 @@ function ProductModal({ p, onClose }) {
         <button onClick={onClose} className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-forest shadow transition hover:rotate-90" aria-label="Close">
           <X className="h-5 w-5" />
         </button>
-        <div className="relative flex items-center justify-center overflow-hidden p-10" style={{ background: `radial-gradient(circle at 50% 40%, ${p.base}55, ${p.base}11 70%)` }}>
-          <div className="absolute inset-0 grid grid-cols-3 gap-6 p-6 opacity-25">
-            {p.ingredients.slice(0, 3).map((_, i) => (
-              <motion.div key={i} animate={{ y: [0, -10, 0] }} transition={{ duration: 4 + i, repeat: Infinity }}>
-                <Ingredient name={productIngredient[p.id] || 'leaf'} className="h-16 w-16 text-forest-400" />
-              </motion.div>
-            ))}
+        {p.photos?.length ? (
+          <ProductGallery photos={p.photos} name={p.name} className="h-[340px] bg-forest/5 sm:h-[420px] md:h-auto md:min-h-[520px]" />
+        ) : (
+          <div className="relative flex items-center justify-center overflow-hidden p-10" style={{ background: `radial-gradient(circle at 50% 40%, ${p.base}55, ${p.base}11 70%)` }}>
+            <div className="absolute inset-0 grid grid-cols-3 gap-6 p-6 opacity-25">
+              {p.ingredients.slice(0, 3).map((_, i) => (
+                <motion.div key={i} animate={{ y: [0, -10, 0] }} transition={{ duration: 4 + i, repeat: Infinity }}>
+                  <Ingredient name={productIngredient[p.id] || 'leaf'} className="h-16 w-16 text-forest-400" />
+                </motion.div>
+              ))}
+            </div>
+            <motion.div animate={{ y: [0, -12, 0], rotate: [-6, -2, -6] }} transition={{ duration: 5, repeat: Infinity }} className="relative w-full max-w-xs">
+              <SoapBar base={p.base} accent={p.accent} className="w-full" />
+            </motion.div>
           </div>
-          <motion.div animate={{ y: [0, -12, 0], rotate: [-6, -2, -6] }} transition={{ duration: 5, repeat: Infinity }} className="relative w-full max-w-xs">
-            <SoapBar base={p.base} accent={p.accent} className="w-full" />
-          </motion.div>
-        </div>
+        )}
         <div className="p-7 sm:p-9">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-600">{p.tagline}</p>
           <h3 className="mt-2 font-serif text-3xl font-semibold text-forest sm:text-4xl">{p.name}</h3>
@@ -156,18 +204,41 @@ function ProductModal({ p, onClose }) {
             <div className="flex items-center rounded-full border border-forest/15 bg-white">
               <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-10 w-10 place-items-center text-forest" aria-label="Decrease quantity"><Minus className="h-4 w-4" /></button>
               <span className="w-8 text-center font-semibold">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="grid h-10 w-10 place-items-center text-forest" aria-label="Increase quantity"><Plus className="h-4 w-4" /></button>
+              <button onClick={() => setQty((q) => Math.min(maxQty, q + 1))} className="grid h-10 w-10 place-items-center text-forest" aria-label="Increase quantity"><Plus className="h-4 w-4" /></button>
             </div>
-            <button
-              disabled={p.stock === 0}
-              onClick={() => {
-                onClose()
-                inquireAbout(`Order: ${qty} × ${p.name}`)
-              }}
-              className="flex-1 rounded-full bg-forest px-6 py-3 text-sm font-semibold text-cream transition hover:bg-forest-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {p.stock === 0 ? 'Sold out' : 'Order now'}
-            </button>
+            {settings.cartEnabled ? (
+              <div className="flex flex-1 gap-2">
+                <button
+                  disabled={p.stock === 0}
+                  onClick={() => add(p.id, qty)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full border border-forest/20 bg-white px-5 py-3 text-sm font-semibold text-forest transition hover:bg-forest/5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ShoppingBag className="h-4 w-4" /> Add to cart
+                </button>
+                <button
+                  disabled={p.stock === 0}
+                  onClick={() => {
+                    add(p.id, qty)
+                    onClose()
+                    setCartOpen(true)
+                  }}
+                  className="flex-1 rounded-full bg-forest px-5 py-3 text-sm font-semibold text-cream transition hover:bg-forest-500 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {p.stock === 0 ? 'Sold out' : 'Buy now'}
+                </button>
+              </div>
+            ) : (
+              <button
+                disabled={p.stock === 0}
+                onClick={() => {
+                  onClose()
+                  inquireAbout(`Order: ${qty} × ${p.name}`)
+                }}
+                className="flex-1 rounded-full bg-forest px-6 py-3 text-sm font-semibold text-cream transition hover:bg-forest-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {p.stock === 0 ? 'Sold out' : 'Order by message'}
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -210,7 +281,7 @@ export function Collection() {
           </AnimatePresence>
         </motion.div>
       </div>
-      <AnimatePresence>{open && <ProductModal p={open} onClose={() => setOpen(null)} />}</AnimatePresence>
+      <AnimatePresence>{open && <ProductModal p={products.find((x) => x.id === open.id) || open} onClose={() => setOpen(null)} />}</AnimatePresence>
     </section>
   )
 }
