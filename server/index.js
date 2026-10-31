@@ -4,12 +4,11 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createApp, finishApp } from './app.js'
 import { adminConfigured } from './auth.js'
-import { fileStore } from './store/file.js'
-import { redisConfig, redisStore } from './store/redis.js'
+import { pickStore } from './store/index.js'
 
-// Local / self-hosted server. Uses Upstash Redis when its variables are set (same data as
-// the Vercel deployment), otherwise server/db.json and server/uploads/.
-const store = redisConfig() ? redisStore() : fileStore()
+// Local / self-hosted server. Uses Supabase or Upstash when their variables are set (the same
+// data as the Vercel deployment), otherwise server/db.json and server/uploads/.
+const store = pickStore()
 const app = createApp(store)
 
 const DIST = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')

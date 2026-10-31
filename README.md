@@ -25,10 +25,12 @@ npm run dev            # site on http://localhost:5173, admin at /admin
 
 ## Deploy on Vercel
 
-The site and the API both run on Vercel: `api/index.js` is a serverless function, and data and photos are kept in Upstash Redis (Vercel's own disk doesn't persist).
+The site and the API both run on Vercel: `api/index.js` is a serverless function, and data and product photos are kept in **Supabase** (Vercel's own disk doesn't persist).
 
-1. In the Vercel project, open **Storage → Create Database → Upstash for Redis** (the free plan is fine) and connect it to this project. Vercel adds its connection variables automatically.
-2. In **Settings → Environment Variables**, add:
+1. **Supabase project:** `tarucare` (Mumbai region). The tables and the `product-photos` bucket are created by the SQL in `supabase/migrations/`. For a new project, run those files in order in Supabase → **SQL Editor**.
+2. In Vercel → **Settings → Environment Variables**, add:
+   - `SUPABASE_URL`: the project URL (already set for this project).
+   - `SUPABASE_SECRET_KEY`: Supabase → **Project Settings → API Keys → Secret keys** (`sb_secret_…`). Mark it **Sensitive**. It stays on the server and must never be put in front-end code.
    - `ADMIN_PASSWORD`: the owner password for the admin panel.
    - `SESSION_SECRET`: a long random string (recommended in production, so sessions don't depend on the password).
    - `GOOGLE_CLIENT_ID`: for shopper sign-in (see below).
@@ -49,6 +51,21 @@ To change the admin password, edit `ADMIN_PASSWORD` and redeploy; everyone signe
 ### Demo admin (for showing clients)
 
 Anyone can try the admin without a password or any storage connected: click **Explore the demo admin** on the sign-in page, or share the direct link **`/admin?demo`**. It runs the full admin on sample data kept only in that visitor's browser (`src/lib/demoApi.js`), with a banner and an **Exit demo** button. The real shop's data is never touched.
+
+### Where the data lives (Supabase)
+
+| Table | Holds |
+| --- | --- |
+| `products` | Soaps: name, price, stock, photos, published |
+| `orders` | Orders with status, total, payment and customer |
+| `customers` | Shoppers who signed in with Google |
+| `inquiries` | Contact form messages and order requests |
+| `staff`, `roles` | Staff logins (hashed passwords) and role permissions |
+| `settings` | Contact details, shop and checkout settings |
+
+Each row keeps the full record in `data` plus readable columns for filtering in the Table Editor. Product photos are in Storage → `product-photos`. Row level security is on with no public policies: only the server, using the secret key, can read or change anything. For restorable daily backups, use Supabase's Pro plan; on the free plan, export orders regularly (Admin → Orders → Export CSV).
+
+Storage is chosen automatically: Supabase when `SUPABASE_URL` and a secret key are set, otherwise Upstash Redis (`UPSTASH_REDIS_REST_URL`/`KV_REST_API_URL`), otherwise `server/db.json` locally.
 
 ## Self-hosted production
 

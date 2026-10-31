@@ -373,6 +373,8 @@ export function createApp(store) {
   app.get('/uploads/:name', async (req, res) => {
     const photo = /^[\w.-]+$/.test(req.params.name) ? await store.getPhoto(req.params.name) : null
     if (!photo) return res.status(404).end()
+    // Supabase serves photos from its CDN; send the browser there.
+    if (photo.redirect) return res.set('Cache-Control', 'public, max-age=86400').redirect(302, photo.redirect)
     // Names are unique per upload, so browsers and the CDN can keep them forever.
     res.set({ 'Content-Type': photo.type, 'Cache-Control': 'public, max-age=31536000, immutable' }).send(photo.body)
   })

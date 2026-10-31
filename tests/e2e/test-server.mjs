@@ -1,5 +1,6 @@
 // The real server and built site, set up for end-to-end tests. Never used in production.
-// - Data lives in a throwaway file and is reset with POST /test/reset before each test.
+// - Data lives in a throwaway file (or, with E2E_SUPABASE_URL and E2E_SUPABASE_KEY set, in that
+//   Supabase project) and is reset with POST /test/reset before each test.
 // - Google sign-in is checked against a key made here instead of Google's, and
 //   GET /test/google-token issues a signed sign-in for any test shopper.
 // - Rate limits are off so tests can sign in as often as they need.
@@ -12,6 +13,7 @@ import { createApp, finishApp } from '../../server/app.js'
 import { setGoogleKeys } from '../../server/auth.js'
 import { seed } from '../../server/seed.js'
 import { fileStore } from '../../server/store/file.js'
+import { supabaseStore } from '../../server/store/supabase.js'
 
 export const OWNER_PASSWORD = 'owner-test-pass'
 const CLIENT_ID = 'e2e-tests.apps.googleusercontent.com'
@@ -25,7 +27,10 @@ const { publicKey, privateKey } = await generateKeyPair('RS256')
 setGoogleKeys(createLocalJWKSet({ keys: [{ ...(await exportJWK(publicKey)), kid: 'e2e', alg: 'RS256' }] }))
 
 const dir = mkdtempSync(join(tmpdir(), 'taru-e2e-'))
-const store = { ...fileStore({ dbFile: join(dir, 'db.json'), uploads: join(dir, 'uploads') }), hit: async () => 0 }
+const base = process.env.E2E_SUPABASE_URL
+  ? supabaseStore({ url: process.env.E2E_SUPABASE_URL, key: process.env.E2E_SUPABASE_KEY })
+  : fileStore({ dbFile: join(dir, 'db.json'), uploads: join(dir, 'uploads') })
+const store = { ...base, hit: async () => 0 }
 const app = createApp(store)
 
 app.post('/test/reset', async (req, res) => {

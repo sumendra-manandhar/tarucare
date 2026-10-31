@@ -1,15 +1,18 @@
 import { createApp, finishApp } from '../server/app.js'
-import { redisConfig, redisStore } from '../server/store/redis.js'
+import { pickStore } from '../server/store/index.js'
 
 // Vercel serverless function: vercel.json sends /api/* and /uploads/* here.
-// Data and photos live in Upstash Redis because the function's own disk doesn't persist.
+// Data and photos live in Supabase (or Upstash) because the function's own disk doesn't persist.
 let app
 export default function handler(req, res) {
-  if (!redisConfig()) {
-    res.statusCode = 503
-    res.setHeader('Content-Type', 'application/json')
-    return res.end(JSON.stringify({ error: 'Storage is not connected. In Vercel, add an Upstash Redis database to this project (Storage tab) and redeploy.' }))
+  if (!app) {
+    const store = pickStore({ allowFile: false })
+    if (!store) {
+      res.statusCode = 503
+      res.setHeader('Content-Type', 'application/json')
+      return res.end(JSON.stringify({ error: 'Storage is not connected. Add SUPABASE_URL and SUPABASE_SECRET_KEY to the Vercel project and redeploy.' }))
+    }
+    app = finishApp(createApp(store))
   }
-  app ??= finishApp(createApp(redisStore()))
   return app(req, res)
 }
